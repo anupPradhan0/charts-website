@@ -2,8 +2,9 @@
 
 import { useSyncExternalStore } from "react";
 import { Clock } from "lucide-react";
-import { LOCALE_META } from "@/lib/i18n/config";
-import { useLocale, useT } from "@/lib/i18n/client";
+import { createFormatter } from "@/lib/utils/format";
+import { useT } from "@/lib/i18n/client";
+import { toISODate } from "@/lib/data/results";
 
 /** Local date and time, ticking every 30 seconds.
  *
@@ -11,7 +12,12 @@ import { useLocale, useT } from "@/lib/i18n/client";
  *  business guessing the visitor's time or timezone, so the server snapshot is
  *  `null` and the field stays blank until hydration. That is what keeps this
  *  free of hydration mismatches. The fixed-width slot stops the header from
- *  shifting when the time appears. */
+ *  shifting when the time appears.
+ *
+ *  Formatting goes through the shared `createFormatter` rather than calling
+ *  `toLocaleDateString` directly, so it gets the same ICU-gap fallback every
+ *  other date on the site gets — some browsers have no locale data for Odia
+ *  at all and would otherwise silently render US-ordered English dates. */
 
 const TICK_MS = 30_000;
 
@@ -25,9 +31,8 @@ const getSnapshot = () => Math.floor(Date.now() / TICK_MS);
 const getServerSnapshot = () => null;
 
 export function LiveClock() {
-  const locale = useLocale();
   const t = useT();
-  const tag = LOCALE_META[locale].intl;
+  const fmt = createFormatter(t);
   const tick = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
   const now = tick === null ? null : new Date(tick * TICK_MS);
 
@@ -38,15 +43,9 @@ export function LiveClock() {
         {now ? (
           <>
             <span className="sr-only">{t("nav.currentTime")} </span>
-            {now.toLocaleDateString(tag, { day: "2-digit", month: "short" })}
+            {fmt.dateShort(toISODate(now))}
             {" · "}
-            {now
-              .toLocaleTimeString(tag, {
-                hour: "2-digit",
-                minute: "2-digit",
-                hour12: true,
-              })
-              .toLowerCase()}
+            {fmt.time(now.toISOString())}
           </>
         ) : (
           <span aria-hidden="true">&nbsp;</span>

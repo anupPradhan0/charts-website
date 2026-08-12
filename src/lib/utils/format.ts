@@ -58,8 +58,28 @@ function dtf(tag: string, options: Intl.DateTimeFormatOptions, key: string): Int
   return found;
 }
 
+/**
+ * Some browsers ship ICU data covering only a handful of locales and have no
+ * entry at all for Odia — `supportedLocalesOf` returns `[]`, and every
+ * `Intl` call silently substitutes the *browser's own* default locale rather
+ * than erroring. That default is usually US-English, which orders a date as
+ * "Aug 12" instead of this app's "12 Aug" — a worse, inconsistent fallback
+ * than just using English on purpose. Node (where every page actually
+ * renders its dates) always has full ICU, so this only matters for the
+ * handful of client-only widgets (the header clock, chart tick labels).
+ */
+function resolveSupportedLocale(tag: string): string {
+  try {
+    return Intl.DateTimeFormat.supportedLocalesOf([tag]).length > 0
+      ? tag
+      : LOCALE_META.en.intl;
+  } catch {
+    return LOCALE_META.en.intl;
+  }
+}
+
 export function createFormatter(t: Translator): Formatter {
-  const tag = LOCALE_META[t.locale].intl;
+  const tag = resolveSupportedLocale(LOCALE_META[t.locale].intl);
 
   const dateFmt = dtf(tag, { day: "2-digit", month: "short", year: "numeric" }, "date");
   const shortFmt = dtf(tag, { day: "2-digit", month: "short" }, "short");
