@@ -41,7 +41,10 @@ export function Header() {
 
   const linkClass = (href: string) =>
     cn(
-      "rounded-lg px-3 py-2 text-sm font-medium transition-colors",
+      // whitespace-nowrap: a two-word label ("Live Results", "लाइव परिणाम")
+      // must never wrap to a second line — that breaks the bar's vertical
+      // rhythm far worse than a slightly tighter fit does.
+      "whitespace-nowrap rounded-lg px-2 py-2 text-sm font-medium transition-colors xl:px-3",
       isActive(pathname, href)
         ? "bg-accent-soft text-accent"
         : "text-muted hover:bg-surface-2 hover:text-fg",
@@ -65,10 +68,10 @@ export function Header() {
           <span className="text-base">{t("meta.brand")}</span>
         </Link>
 
-        <nav aria-label={t("nav.label")} className="ml-2 hidden lg:block">
-          <ul className="flex items-center gap-0.5">
+        <nav aria-label={t("nav.label")} className="ml-1 hidden min-w-0 lg:block">
+          <ul className="flex items-center gap-x-0.5">
             {NAV_ITEMS.map((item) => (
-              <li key={item.href}>
+              <li key={item.href} className="shrink-0">
                 <Link
                   href={item.href}
                   className={linkClass(item.href)}
@@ -86,9 +89,10 @@ export function Header() {
             <LiveClock />
           </div>
 
-          {/* The inline search field only appears where there is room for it
-              without squeezing the brand. */}
-          <form action="/search" role="search" className="hidden lg:block">
+          {/* The inline search field only appears from `xl`: at `lg` the
+              primary nav (up to 7 labels, some two words) already needs the
+              room, and the icon button below covers search down to `xl`. */}
+          <form action="/search" role="search" className="hidden xl:block">
             <label htmlFor="header-search" className="sr-only">
               {t("searchPage.inputLabel")}
             </label>
@@ -102,7 +106,7 @@ export function Header() {
                 type="search"
                 name="q"
                 placeholder={`${t("common.search")}…`}
-                className="h-9 w-40 rounded-lg border border-line bg-surface-2 pr-3 pl-8 text-sm placeholder:text-subtle xl:w-56"
+                className="h-9 w-48 rounded-lg border border-line bg-surface-2 pr-3 pl-8 text-sm placeholder:text-subtle 2xl:w-56"
               />
             </div>
           </form>
@@ -113,7 +117,7 @@ export function Header() {
             href="/search"
             onClick={close}
             aria-label={t("common.search")}
-            className={cn(iconButton, "lg:hidden")}
+            className={cn(iconButton, "xl:hidden")}
           >
             <Search className="size-5" aria-hidden="true" />
           </Link>
