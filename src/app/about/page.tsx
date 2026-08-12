@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { Container, PageHeader } from "@/components/layout/PageShell";
 import { Card, CardHeader } from "@/components/ui/primitives";
 import { CATEGORIES } from "@/lib/data/categories";
+import { MARKET_GROUPS } from "@/types";
 import { ARCHIVE_DAYS } from "@/lib/data/results";
 import { formatSchedule } from "@/lib/utils/format";
 import { SITE, canonical } from "@/lib/site";
@@ -88,13 +89,27 @@ export default function AboutPage() {
                   both read through that layer. Replacing the generator with a database means
                   changing one module.
                 </p>
+                <p>
+                  Common questions are answered in the{" "}
+                  <Link href="/faqs" className="text-accent hover:underline">
+                    FAQs
+                  </Link>
+                  , and the{" "}
+                  <Link href="/disclaimer" className="text-accent hover:underline">
+                    disclaimer
+                  </Link>{" "}
+                  sets out the limits of what the statistics mean.
+                </p>
               </div>
             </Card>
           </div>
 
           <div className="space-y-3 sm:space-y-4">
             <Card>
-              <CardHeader title="Publication schedule" description="All times are local." />
+              <CardHeader
+                title="Publication schedule"
+                description={`${CATEGORIES.length} markets across ${MARKET_GROUPS.length} groups. All times are local.`}
+              />
               <ul className="divide-y divide-line text-sm">
                 {CATEGORIES.map((category) => (
                   <li key={category.id} className="flex min-h-11 items-baseline justify-between gap-3 px-4 py-2.5">

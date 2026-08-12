@@ -2,6 +2,20 @@
 
 export type CategoryStatus = "active" | "paused";
 
+/** Markets are grouped by when they publish. `special` covers supplementary
+ *  series that sit outside the ordinary day/night schedule. */
+export type MarketGroup = "day" | "night" | "special";
+
+export const MARKET_GROUPS: { value: MarketGroup; label: string; blurb: string }[] = [
+  { value: "day", label: "Day Markets", blurb: "Publishing between morning and late afternoon." },
+  { value: "night", label: "Night Markets", blurb: "Publishing from early evening onwards." },
+  {
+    value: "special",
+    label: "Special Markets",
+    blurb: "Supplementary series that sit outside the ordinary day and night schedule.",
+  },
+];
+
 /** A result is `scheduled` before its slot, `pending` once the slot has passed
  *  but nothing has been published, and `published` once a value exists. */
 export type ResultStatus = "published" | "pending" | "scheduled";
@@ -13,6 +27,7 @@ export interface Category {
   description: string;
   /** 24h "HH:MM" — the daily slot at which this category publishes. */
   scheduleTime: string;
+  group: MarketGroup;
   status: CategoryStatus;
   updateFrequency: string;
   /** 1-6, maps onto the --color-chart-N design tokens. */

@@ -50,9 +50,28 @@ describe("categories API", () => {
   it("lists every category", async () => {
     const { response, json } = await get("/api/categories");
     assert.equal(response.status, 200);
-    assert.equal(json.data.length, 8);
-    assert.equal(json.meta.total, 8);
+    assert.equal(json.data.length, 18);
+    assert.equal(json.meta.total, 18);
     assert.ok(json.data.every((c) => c.slug && c.scheduleTime));
+    // Every market belongs to exactly one group, and all three are populated.
+    const groups = new Set(json.data.map((c) => c.group));
+    assert.deepEqual([...groups].sort(), ["day", "night", "special"]);
+  });
+
+  it("filters by market group", async () => {
+    const { json } = await get("/api/categories?status=active");
+    const night = await get("/api/results?group=night&limit=100");
+    const nightSlugs = new Set(
+      json.data.filter((c) => c.group === "night").map((c) => c.slug),
+    );
+    assert.ok(night.json.data.length > 0);
+    assert.ok(
+      night.json.data.every((r) => nightSlugs.has(r.categorySlug) || r.categorySlug === "express-results"),
+      "group=night returns only night markets",
+    );
+
+    const bad = await get("/api/results?group=afternoon");
+    assert.equal(bad.response.status, 400);
   });
 
   it("filters by status", async () => {
@@ -166,7 +185,7 @@ describe("statistics API", () => {
       stats.summary.publishedResults,
       "every published value lands in exactly one bucket",
     );
-    assert.ok(stats.summary.totalCategories === 8);
+    assert.equal(stats.summary.totalCategories, 18);
   });
 
   it("scopes to one category", async () => {
@@ -186,12 +205,17 @@ describe("public pages", () => {
   const paths = [
     "/",
     "/results",
+    "/results?group=night",
     "/categories",
     "/categories/alpha-market",
+    "/charts",
+    "/charts?market=central-results",
     "/history",
     "/statistics",
     "/search",
     "/about",
+    "/faqs",
+    "/disclaimer",
   ];
 
   /** Markup only — the RSC payload in <script> tags legitimately contains
@@ -247,6 +271,22 @@ describe("public pages", () => {
     // The wide table must live in a `scroll-x` box so a narrow tablet scrolls
     // the table instead of the whole page.
     assert.match(markup(text), /scroll-x[^"]*hidden md:block/);
+  });
+
+  it("renders the calendar and frequency grids", async () => {
+    const { text } = await get("/charts?market=alpha-market");
+    const body = markup(text);
+    assert.match(body, /Calendar/);
+    assert.match(body, /Value frequency/);
+    // 100 frequency cells plus the calendar's own cells.
+    assert.ok((body.match(/aspect-square/g) ?? []).length >= 100);
+    assert.match(body, /says nothing about/, "the frequency grid carries its caveat");
+  });
+
+  it("falls back to a valid market and month for bad chart input", async () => {
+    const { response, text } = await get("/charts?market=nope&month=1999-13");
+    assert.equal(response.status, 200);
+    assert.match(markup(text), /Calendar/);
   });
 
   it("degrades gracefully on nonsense query parameters", async () => {

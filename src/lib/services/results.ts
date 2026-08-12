@@ -18,9 +18,12 @@ function matchesSearch(row: ResultEntry, term: string): boolean {
   );
 }
 
+const GROUP_BY_SLUG = new Map(CATEGORIES.map((c) => [c.slug, c.group]));
+
 function applyFilters(rows: ResultEntry[], q: Partial<ResultQuery>): ResultEntry[] {
   return rows.filter((row) => {
     if (q.category && row.categorySlug !== q.category) return false;
+    if (q.group && GROUP_BY_SLUG.get(row.categorySlug) !== q.group) return false;
     if (q.status && row.status !== q.status) return false;
     if (q.date && row.date !== q.date) return false;
     if (q.startDate && row.date < q.startDate) return false;

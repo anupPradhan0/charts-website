@@ -1,0 +1,88 @@
+<!doctype html>
+<meta charset="utf-8" />
+<title>viewport audit</title>
+<style>
+  body { font: 13px/1.4 ui-monospace, monospace; margin: 12px; }
+  #frame { border: 1px solid #999; height: 700px; display: block; }
+  #out { white-space: pre; margin-top: 12px; }
+</style>
+<h1>viewport audit</h1>
+<div><iframe id="frame" src="about:blank"></iframe></div>
+<pre id="out">running…</pre>
+<script>
+  // Dev-only harness. Copy to public/, run, then delete — see README.
+  // Loads each path at each width and reports horizontal overflow plus the
+  // elements responsible, and any interactive control under 40px tall.
+  const params = new URLSearchParams(location.search);
+  const widths = (params.get("widths") || "320,360,375,390,414,430,768,1024,1440")
+    .split(",").map(Number);
+  const paths = (params.get("paths") ||
+    "/,/results,/categories,/categories/alpha-market,/charts,/history,/statistics,/search,/about,/faqs,/disclaimer")
+    .split(",");
+
+  const frame = document.getElementById("frame");
+  if (params.get("h")) frame.style.height = params.get("h") + "px";
+  const out = document.getElementById("out");
+  const lines = [];
+  let bust = 1;
+
+  function load(path) {
+    return new Promise((resolve) => {
+      frame.onload = () => setTimeout(resolve, 350);
+      // Cache-bust: a cached iframe response would silently audit stale markup.
+      frame.src = path + (path.includes("?") ? "&" : "?") + "_cb=" + bust++;
+    });
+  }
+
+  function describe(el) {
+    const id = el.id ? `#${el.id}` : "";
+    const cls = (el.className && typeof el.className === "string")
+      ? "." + el.className.trim().split(/\s+/).slice(0, 4).join(".")
+      : "";
+    const text = (el.textContent || "").trim().slice(0, 28).replace(/\s+/g, " ");
+    return `${el.tagName.toLowerCase()}${id}${cls} "${text}"`;
+  }
+
+  function audit(width) {
+    const doc = frame.contentDocument;
+    const overflow = doc.documentElement.scrollWidth - width;
+    const offenders = [];
+    if (overflow > 1) {
+      for (const el of doc.querySelectorAll("body *")) {
+        const r = el.getBoundingClientRect();
+        if (r.width === 0 && r.height === 0) continue;
+        if (r.right > width + 1 || r.left < -1) {
+          if (!offenders.some((o) => o.contains(el))) offenders.push(el);
+        }
+      }
+    }
+    const small = [];
+    for (const el of doc.querySelectorAll("a,button,select,input,[role=button],summary")) {
+      const r = el.getBoundingClientRect();
+      if (r.width === 0 || r.height === 0) continue;
+      if (r.height < 32 && el.closest("nav,header,footer,form,[data-touch]")) {
+        small.push(`${describe(el)} h=${Math.round(r.height)}`);
+      }
+    }
+    return { overflow, offenders: offenders.slice(0, 4).map(describe), small: small.slice(0, 5) };
+  }
+
+  (async () => {
+    let bad = 0;
+    for (const path of paths) {
+      lines.push(`\n=== ${path}`);
+      for (const width of widths) {
+        frame.style.width = width + "px";
+        await load(path);
+        const { overflow, offenders, small } = audit(width);
+        if (overflow > 1) bad++;
+        lines.push(`  ${String(width).padStart(4)}px  ${overflow > 1 ? `OVERFLOW +${overflow}` : "ok"}`);
+        offenders.forEach((o) => lines.push(`         ↳ ${o}`));
+        if (width <= 430) small.forEach((s) => lines.push(`         · small: ${s}`));
+        out.textContent = lines.join("\n");
+      }
+    }
+    lines.push(`\nDONE — ${bad} overflowing combinations`);
+    out.textContent = lines.join("\n");
+  })();
+</script>

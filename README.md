@@ -100,6 +100,7 @@ Category ──< Result
 | `name`           | display name                                      |
 | `description`    | prose shown on the category page                  |
 | `scheduleTime`   | 24h `HH:MM` daily slot                            |
+| `group`          | `day` \| `night` \| `special`                     |
 | `status`         | `active` \| `paused`                              |
 | `updateFrequency`| `Daily` \| `Weekdays` \| `Paused`                 |
 | `accent`         | 1–6, maps to a chart colour token                 |
@@ -133,7 +134,7 @@ Read-only JSON. Every response is `{ data, meta }`; every error is
 
 | Endpoint                  | Notes                                              |
 | ------------------------- | -------------------------------------------------- |
-| `GET /api/categories`     | `?search= &status=active|paused &summary=true`      |
+| `GET /api/categories`     | `?search= &status=active|paused &group= &summary=true` |
 | `GET /api/categories/:slug` | Category, latest value, counts, last 30 entries   |
 | `GET /api/results`        | The full query set (below)                          |
 | `GET /api/results/:id`    | One entry with its category                         |
@@ -145,6 +146,7 @@ Query parameters for `/api/results` and `/api/history`:
 | Param                  | Type                                                         |
 | ---------------------- | ------------------------------------------------------------ |
 | `category`             | slug                                                          |
+| `group`                | `day` \| `night` \| `special`                                  |
 | `date`                 | `YYYY-MM-DD`                                                  |
 | `startDate`, `endDate` | `YYYY-MM-DD`                                                  |
 | `search`               | matches category name, slug, date or value                    |
@@ -172,14 +174,17 @@ parameter and renders rather than erroring.
 
 | Route                  | What it does                                                     |
 | ---------------------- | ---------------------------------------------------------------- |
-| `/`                    | Overview: summary tiles, today's board, recent entries, categories |
-| `/results`             | Today's board plus the full day schedule; auto-refreshes          |
-| `/categories`          | All categories, filterable by name                                |
-| `/categories/[slug]`   | Current value, key numbers, two charts, the category's own archive |
+| `/`                    | Dashboard: summary tiles, today's board, recent entries, markets   |
+| `/results`             | Live results grouped Day / Night / Special (`?group=`), plus the full schedule; auto-refreshes |
+| `/categories`          | All 18 markets, grouped, filterable by name                       |
+| `/categories/[slug]`   | Current value, key numbers, two charts, the market's own archive   |
+| `/charts`              | Month calendar of one market's values, and a 10×10 value-frequency grid |
 | `/history`             | The full archive: filters, sorting, pagination                    |
-| `/statistics`          | Five charts, scoped by category and time window                   |
-| `/search`              | Search categories, dates and values                               |
+| `/statistics`          | Five charts, scoped by market and time window                     |
+| `/search`              | Search markets, dates and values                                  |
 | `/about`               | What the site is, what it is not, how the data is made            |
+| `/faqs`                | Native `<details>` accordion — no JavaScript                      |
+| `/disclaimer`          | Scope and limits of the data and statistics                       |
 
 ## Notes on the implementation
 
@@ -207,12 +212,14 @@ parameter and renders rather than erroring.
 
 ## Responsive audit
 
-Layout was verified by measurement, not by eye. A temporary harness loaded every
+Layout was verified by measurement, not by eye. `tools/viewport-audit.html` loads every
 page into a same-origin iframe at 320 / 360 / 375 / 390 / 414 / 430 / 768 / 1024
 / 1440px and compared `documentElement.scrollWidth` against the frame width,
 reporting the outermost offending element and any interactive control under
-40px. Ten paths (including a 52-character search term and a filtered, paginated
-archive) came back clean at all nine widths.
+32px. Eleven paths came back clean at all nine widths.
+
+To re-run it: `cp tools/viewport-audit.html public/__viewport.html`, build,
+start, open `/__viewport.html`, then delete it again — it must not ship.
 
 The one bug it caught is worth knowing about: `sr-only` on a `<table>` does not
 constrain it. A table treats `width: 1px` as a minimum and expands to its

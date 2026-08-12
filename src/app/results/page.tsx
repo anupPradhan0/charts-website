@@ -12,11 +12,19 @@ import {
 } from "@/components/ui/primitives";
 import { ResultCard } from "@/components/results/cards";
 import { AutoRefresh } from "@/components/results/AutoRefresh";
-import { getCategorySummaries } from "@/lib/services/categories";
+import { getCategorySummaries, getSummariesByGroup } from "@/lib/services/categories";
 import { getLastUpdated } from "@/lib/services/results";
-import { formatDate, formatDateTime, formatRelative, formatSchedule, formatTime } from "@/lib/utils/format";
+import {
+  cn,
+  formatDate,
+  formatDateTime,
+  formatRelative,
+  formatSchedule,
+  formatTime,
+} from "@/lib/utils/format";
 import { toISODate } from "@/lib/data/results";
 import { canonical } from "@/lib/site";
+import { MARKET_GROUPS } from "@/types";
 
 export const metadata: Metadata = {
   title: "Current Results",
@@ -32,12 +40,25 @@ export const metadata: Metadata = {
 
 export const dynamic = "force-dynamic";
 
-export default function ResultsPage() {
-  const summaries = getCategorySummaries();
+const chip =
+  "inline-flex min-h-10 items-center rounded-full border px-3.5 text-sm font-medium whitespace-nowrap";
+const chipOn = "border-transparent bg-accent text-accent-fg";
+const chipOff = "border-line text-muted hover:text-fg";
+
+export default async function ResultsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ group?: string }>;
+}) {
+  const { group } = await searchParams;
+  const activeGroup = MARKET_GROUPS.find((g) => g.value === group)?.value;
+  const grouped = getSummariesByGroup().filter((g) => !activeGroup || g.group === activeGroup);
+  const summaries = getCategorySummaries().filter(
+    (s) => !activeGroup || s.category.group === activeGroup,
+  );
   const today = toISODate(new Date());
   const lastUpdated = getLastUpdated();
 
-  const published = summaries.filter((s) => s.today?.status === "published");
   const upcoming = summaries.filter((s) => s.today && s.today.status !== "published");
 
   return (
@@ -66,36 +87,73 @@ export default function ResultsPage() {
       />
 
       <Container className="py-6 sm:py-8">
-        <section aria-labelledby="published-today" className="mb-6 sm:mb-8">
-          <h2 id="published-today" className="mb-3 text-base font-semibold tracking-tight sm:mb-4 sm:text-lg">
-            Published today
-            <span className="ml-2 text-sm font-normal text-muted tabular">
-              ({published.length})
-            </span>
-          </h2>
+        {/* Group filter --------------------------------------------------- */}
+        <nav aria-label="Market groups" className="mb-5 sm:mb-6">
+          <ul className="scroll-x flex gap-2 pb-1">
+            <li>
+              <Link
+                href="/results"
+                aria-current={!activeGroup ? "true" : undefined}
+                className={cn(chip, !activeGroup ? chipOn : chipOff)}
+              >
+                All markets
+              </Link>
+            </li>
+            {MARKET_GROUPS.map((g) => (
+              <li key={g.value}>
+                <Link
+                  href={`/results?group=${g.value}`}
+                  aria-current={activeGroup === g.value ? "true" : undefined}
+                  className={cn(chip, activeGroup === g.value ? chipOn : chipOff)}
+                >
+                  {g.label}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </nav>
 
-          {published.length === 0 ? (
-            <Card>
-              <EmptyState
-                title="Nothing has been published yet today"
-                description="The first slot has not completed. Values appear here automatically as each category publishes."
-                action={
-                  <Link href="/history" className={buttonClass("secondary")}>
-                    See yesterday&apos;s results
-                  </Link>
-                }
-              />
-            </Card>
-          ) : (
-            <ul className="grid gap-2.5 min-[380px]:grid-cols-2 sm:gap-3 lg:grid-cols-4">
-              {published.map((summary) => (
-                <li key={summary.category.id}>
-                  <ResultCard entry={summary.today!} category={summary.category} />
-                </li>
-              ))}
-            </ul>
-          )}
-        </section>
+        {grouped.map(({ group: groupName, summaries: groupSummaries }) => {
+          const meta = MARKET_GROUPS.find((g) => g.value === groupName)!;
+          const published = groupSummaries.filter((s) => s.today?.status === "published");
+          return (
+            <section
+              key={groupName}
+              aria-labelledby={`group-${groupName}`}
+              className="mb-6 sm:mb-8"
+            >
+              <div className="mb-3 sm:mb-4">
+                <h2
+                  id={`group-${groupName}`}
+                  className="text-base font-semibold tracking-tight sm:text-lg"
+                >
+                  {meta.label}
+                  <span className="ml-2 text-sm font-normal text-muted tabular">
+                    ({published.length}/{groupSummaries.length} published)
+                  </span>
+                </h2>
+                <p className="mt-1 text-sm text-muted text-pretty">{meta.blurb}</p>
+              </div>
+
+              {groupSummaries.length === 0 ? (
+                <Card>
+                  <EmptyState title="No markets in this group" />
+                </Card>
+              ) : (
+                <ul className="grid gap-2.5 min-[380px]:grid-cols-2 sm:gap-3 lg:grid-cols-4">
+                  {groupSummaries.map((summary) => {
+                    const entry = summary.today ?? summary.latest;
+                    return entry ? (
+                      <li key={summary.category.id}>
+                        <ResultCard entry={entry} category={summary.category} />
+                      </li>
+                    ) : null;
+                  })}
+                </ul>
+              )}
+            </section>
+          );
+        })}
 
         <section aria-labelledby="schedule-today">
           <Card>

@@ -5,6 +5,7 @@ import { Container, PageHeader } from "@/components/layout/PageShell";
 import { Card, EmptyState, buttonClass } from "@/components/ui/primitives";
 import { CategoryCard } from "@/components/results/cards";
 import { getCategorySummaries } from "@/lib/services/categories";
+import { MARKET_GROUPS } from "@/types";
 import { canonical } from "@/lib/site";
 
 export const metadata: Metadata = {
@@ -39,8 +40,8 @@ export default async function CategoriesPage({
   return (
     <>
       <PageHeader
-        title="Categories"
-        description="Each category publishes a single value at a fixed daily slot. Open one for its own archive, statistics and chart."
+        title="Markets"
+        description="Every market, grouped by when it publishes. Open one for its own archive, statistics and charts."
         breadcrumbs={[{ href: "/", label: "Home" }, { label: "Categories" }]}
       />
 
@@ -72,7 +73,37 @@ export default async function CategoriesPage({
           {summaries.length} categories shown
         </p>
 
-        {summaries.length === 0 ? (
+        {summaries.length > 0 && !term ? (
+          <div className="space-y-6 sm:space-y-8">
+            {MARKET_GROUPS.map((group) => {
+              const inGroup = summaries.filter((s) => s.category.group === group.value);
+              if (inGroup.length === 0) return null;
+              return (
+                <section key={group.value} aria-labelledby={`markets-${group.value}`}>
+                  <div className="mb-3 sm:mb-4">
+                    <h2
+                      id={`markets-${group.value}`}
+                      className="text-base font-semibold tracking-tight sm:text-lg"
+                    >
+                      {group.label}
+                      <span className="ml-2 text-sm font-normal text-muted tabular">
+                        ({inGroup.length})
+                      </span>
+                    </h2>
+                    <p className="mt-1 text-sm text-muted text-pretty">{group.blurb}</p>
+                  </div>
+                  <ul className="grid gap-2.5 sm:grid-cols-2 sm:gap-3 lg:grid-cols-3 xl:grid-cols-4">
+                    {inGroup.map((summary) => (
+                      <li key={summary.category.id}>
+                        <CategoryCard summary={summary} />
+                      </li>
+                    ))}
+                  </ul>
+                </section>
+              );
+            })}
+          </div>
+        ) : summaries.length === 0 ? (
           <Card>
             <EmptyState
               icon={<SearchX className="size-8" aria-hidden="true" />}

@@ -65,7 +65,7 @@ export function Header() {
         <nav aria-label="Primary" className="ml-2 hidden lg:block">
           <ul className="flex items-center gap-0.5">
             {NAV_ITEMS.map((item) => (
-              <li key={item.href}>
+              <li key={item.label}>
                 <Link
                   href={item.href}
                   className={linkClass(item.href)}
@@ -138,7 +138,7 @@ export function Header() {
         >
           <ul className="mx-auto max-w-7xl px-3 py-2 sm:px-6">
             {NAV_ITEMS.map((item) => (
-              <li key={item.href}>
+              <li key={item.label}>
                 <Link
                   href={item.href}
                   onClick={close}
@@ -152,6 +152,21 @@ export function Header() {
                 >
                   {item.label}
                 </Link>
+                {item.children ? (
+                  <ul className="mb-1 ml-3 border-l border-line pl-3">
+                    {item.children.map((child) => (
+                      <li key={child.href}>
+                        <Link
+                          href={child.href}
+                          onClick={close}
+                          className="flex min-h-11 items-center rounded-lg px-3 text-sm text-muted hover:bg-surface-2 hover:text-fg"
+                        >
+                          {child.label}
+                        </Link>
+                      </li>
+                    ))}
+                  </ul>
+                ) : null}
               </li>
             ))}
             <li className="border-t border-line px-3 py-3 xl:hidden">

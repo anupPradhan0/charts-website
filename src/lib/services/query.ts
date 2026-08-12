@@ -24,8 +24,15 @@ export const STATUS_OPTIONS = [
   { value: "scheduled", label: "Scheduled" },
 ] as const;
 
+export const GROUP_OPTIONS = [
+  { value: "day", label: "Day markets" },
+  { value: "night", label: "Night markets" },
+  { value: "special", label: "Special markets" },
+] as const;
+
 export const resultQuerySchema = z.object({
   category: z.string().min(1).max(64).optional(),
+  group: z.enum(["day", "night", "special"]).optional(),
   date: isoDate.optional(),
   startDate: isoDate.optional(),
   endDate: isoDate.optional(),
@@ -42,6 +49,7 @@ export type ResultQuery = z.infer<typeof resultQuerySchema>;
 
 export const statisticsQuerySchema = z.object({
   category: z.string().min(1).max(64).optional(),
+  group: z.enum(["day", "night", "special"]).optional(),
   days: z.coerce.number().int().min(7).max(60).default(30),
 });
 

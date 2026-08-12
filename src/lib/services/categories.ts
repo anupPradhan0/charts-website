@@ -1,13 +1,16 @@
 import { CATEGORIES, CATEGORY_BY_SLUG } from "@/lib/data/categories";
 import { getAllResults, toISODate } from "@/lib/data/results";
-import type { Category, CategorySummary, ResultEntry } from "@/types";
+import type { Category, CategorySummary, MarketGroup, ResultEntry } from "@/types";
 
 /** Category queries. The only entry point to category data. */
 
-export function listCategories(opts: { search?: string; status?: Category["status"] } = {}): Category[] {
+export function listCategories(
+  opts: { search?: string; status?: Category["status"]; group?: MarketGroup } = {},
+): Category[] {
   const needle = opts.search?.trim().toLowerCase();
   return CATEGORIES.filter((c) => {
     if (opts.status && c.status !== opts.status) return false;
+    if (opts.group && c.group !== opts.group) return false;
     if (needle && !c.name.toLowerCase().includes(needle) && !c.slug.includes(needle))
       return false;
     return true;
@@ -44,4 +47,13 @@ export function getCategorySummaries(): CategorySummary[] {
 
 export function getCategorySummary(slug: string): CategorySummary | null {
   return getCategorySummaries().find((s) => s.category.slug === slug) ?? null;
+}
+
+/** Summaries bucketed by market group, in group order. */
+export function getSummariesByGroup(): { group: MarketGroup; summaries: CategorySummary[] }[] {
+  const all = getCategorySummaries();
+  return (["day", "night", "special"] as const).map((group) => ({
+    group,
+    summaries: all.filter((s) => s.category.group === group),
+  }));
 }

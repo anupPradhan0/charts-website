@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { BarChart3 } from "lucide-react";
 import { CATEGORIES } from "@/lib/data/categories";
+import { MARKET_GROUPS } from "@/types";
 import { NAV_ITEMS } from "./nav";
 
 export function Footer() {
@@ -8,7 +9,7 @@ export function Footer() {
 
   return (
     <footer className="mt-12 border-t border-line bg-surface">
-      <div className="mx-auto grid max-w-7xl gap-6 px-4 py-8 sm:gap-8 sm:px-6 sm:py-10 md:grid-cols-3 lg:px-8">
+      <div className="mx-auto grid max-w-7xl gap-6 px-4 py-8 sm:gap-8 sm:px-6 sm:py-10 md:grid-cols-2 lg:grid-cols-4 lg:px-8">
         <div>
           <div className="flex items-center gap-2 font-semibold tracking-tight">
             <span className="grid size-8 place-items-center rounded-lg bg-accent text-accent-fg">
@@ -40,23 +41,25 @@ export function Footer() {
           </ul>
         </nav>
 
-        <nav aria-labelledby="footer-categories">
-          <h2 id="footer-categories" className="text-sm font-semibold">
-            Categories
-          </h2>
-          <ul className="mt-1 grid grid-cols-2 gap-x-4">
-            {CATEGORIES.map((category) => (
-              <li key={category.slug}>
-                <Link
-                  href={`/categories/${category.slug}`}
-                  className="-mx-2 flex min-h-11 items-center rounded-lg px-2 text-sm text-muted hover:text-fg md:min-h-9"
-                >
-                  <span className="truncate">{category.name}</span>
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </nav>
+        {MARKET_GROUPS.map((group) => (
+          <nav key={group.value} aria-labelledby={`footer-${group.value}`}>
+            <h2 id={`footer-${group.value}`} className="text-sm font-semibold">
+              {group.label}
+            </h2>
+            <ul className="mt-1">
+              {CATEGORIES.filter((c) => c.group === group.value).map((category) => (
+                <li key={category.slug}>
+                  <Link
+                    href={`/categories/${category.slug}`}
+                    className="-mx-2 flex min-h-11 items-center rounded-lg px-2 text-sm text-muted hover:text-fg md:min-h-9"
+                  >
+                    <span className="truncate">{category.name}</span>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </nav>
+        ))}
       </div>
 
       <div className="border-t border-line">
