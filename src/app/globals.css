@@ -1,26 +1,175 @@
 @import "tailwindcss";
 
+/* ---------------------------------------------------------------
+   Design tokens. Every colour used by the app is defined here once
+   for light and dark, then exposed to Tailwind through @theme inline
+   so components never need `dark:` variants for colour.
+   --------------------------------------------------------------- */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+  --bg: #f6f7f9;
+  --surface: #ffffff;
+  --surface-2: #f1f3f6;
+  --line: #e2e5ea;
+  --line-strong: #cbd1da;
+  --fg: #10131a;
+  --fg-muted: #5b6474;
+  --fg-subtle: #808997;
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --accent: #3f4fd4;
+  --accent-hover: #333fb0;
+  --accent-fg: #ffffff;
+  --accent-soft: #eaecfb;
+
+  --ok: #0f7a4d;
+  --ok-soft: #e2f5eb;
+  --warn: #9a5b00;
+  --warn-soft: #fdf0dc;
+  --info: #1f6a91;
+  --info-soft: #e2f0f8;
+  --danger: #b3261e;
+  --danger-soft: #fbe6e4;
+
+  --chart-1: #3f4fd4;
+  --chart-2: #0f7a4d;
+  --chart-3: #9a5b00;
+  --chart-4: #1f6a91;
+  --chart-5: #7a3fb0;
+  --chart-6: #b3261e;
+  --chart-grid: #e2e5ea;
+
+  --shadow-card: 0 1px 2px rgb(16 19 26 / 0.05);
+  --shadow-pop: 0 8px 24px -8px rgb(16 19 26 / 0.18);
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --bg: #0b0d12;
+    --surface: #13161d;
+    --surface-2: #1a1e27;
+    --line: #262b36;
+    --line-strong: #39404e;
+    --fg: #eef1f6;
+    --fg-muted: #a3acbb;
+    --fg-subtle: #7d8697;
+
+    --accent: #8b95f5;
+    --accent-hover: #a3abf8;
+    --accent-fg: #0b0d12;
+    --accent-soft: #1e2340;
+
+    --ok: #56d69b;
+    --ok-soft: #10281f;
+    --warn: #e8b062;
+    --warn-soft: #2b2113;
+    --info: #6cbde3;
+    --info-soft: #10242e;
+    --danger: #f2867d;
+    --danger-soft: #2d1614;
+
+    --chart-1: #8b95f5;
+    --chart-2: #56d69b;
+    --chart-3: #e8b062;
+    --chart-4: #6cbde3;
+    --chart-5: #c095f0;
+    --chart-6: #f2867d;
+    --chart-grid: #262b36;
+
+    --shadow-card: 0 1px 2px rgb(0 0 0 / 0.4);
+    --shadow-pop: 0 8px 24px -8px rgb(0 0 0 / 0.6);
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+@theme inline {
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-line: var(--line);
+  --color-line-strong: var(--line-strong);
+  --color-fg: var(--fg);
+  --color-muted: var(--fg-muted);
+  --color-subtle: var(--fg-subtle);
+
+  --color-accent: var(--accent);
+  --color-accent-hover: var(--accent-hover);
+  --color-accent-fg: var(--accent-fg);
+  --color-accent-soft: var(--accent-soft);
+
+  --color-ok: var(--ok);
+  --color-ok-soft: var(--ok-soft);
+  --color-warn: var(--warn);
+  --color-warn-soft: var(--warn-soft);
+  --color-info: var(--info);
+  --color-info-soft: var(--info-soft);
+  --color-danger: var(--danger);
+  --color-danger-soft: var(--danger-soft);
+
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --color-chart-6: var(--chart-6);
+
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+
+  --radius-card: 0.75rem;
+
+  --shadow-card: var(--shadow-card);
+  --shadow-pop: var(--shadow-pop);
+}
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--fg);
+    font-family: var(--font-geist-sans), system-ui, sans-serif;
+    /* Nothing on any page may push the viewport sideways. */
+    overflow-x: hidden;
+  }
+
+  /* One focus ring for the whole application. */
+  :focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+    border-radius: 2px;
+  }
+
+  ::selection {
+    background: var(--accent-soft);
+    color: var(--fg);
+  }
+}
+
+@utility tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Skip link: off-screen until focused. */
+.skip-link {
+  position: absolute;
+  left: 0.5rem;
+  top: -3rem;
+  z-index: 60;
+  transition: top 120ms ease;
+}
+.skip-link:focus {
+  top: 0.5rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
 }

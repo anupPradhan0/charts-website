@@ -1,0 +1,211 @@
+import Link from "next/link";
+import type { Metadata } from "next";
+import { CalendarRange } from "lucide-react";
+import { Container, PageHeader, UpdatedStamp } from "@/components/layout/PageShell";
+import {
+  Card,
+  CardHeader,
+  EmptyState,
+  ResultValue,
+  StatusBadge,
+  buttonClass,
+} from "@/components/ui/primitives";
+import { ResultCard } from "@/components/results/cards";
+import { AutoRefresh } from "@/components/results/AutoRefresh";
+import { getCategorySummaries } from "@/lib/services/categories";
+import { getLastUpdated } from "@/lib/services/results";
+import { formatDate, formatDateTime, formatRelative, formatSchedule, formatTime } from "@/lib/utils/format";
+import { toISODate } from "@/lib/data/results";
+import { canonical } from "@/lib/site";
+
+export const metadata: Metadata = {
+  title: "Current Results",
+  description:
+    "Today's board: the value published by each category, the slots still to come, and when each entry was published.",
+  alternates: { canonical: canonical("/results") },
+  openGraph: {
+    title: "Current Results · Numera",
+    description: "Today's published values across every category.",
+    url: canonical("/results"),
+  },
+};
+
+export const dynamic = "force-dynamic";
+
+export default function ResultsPage() {
+  const summaries = getCategorySummaries();
+  const today = toISODate(new Date());
+  const lastUpdated = getLastUpdated();
+
+  const published = summaries.filter((s) => s.today?.status === "published");
+  const upcoming = summaries.filter((s) => s.today && s.today.status !== "published");
+
+  return (
+    <>
+      <PageHeader
+        title="Current Results"
+        description={`Today's board for ${formatDate(today)}. Each category publishes one value at its scheduled slot.`}
+        breadcrumbs={[{ href: "/", label: "Home" }, { label: "Current Results" }]}
+        meta={
+          <>
+            {lastUpdated ? (
+              <UpdatedStamp
+                timestamp={formatDateTime(lastUpdated)}
+                relative={formatRelative(lastUpdated)}
+              />
+            ) : null}
+            <AutoRefresh />
+          </>
+        }
+        actions={
+          <Link href="/history" className={buttonClass("secondary")}>
+            <CalendarRange className="size-4" aria-hidden="true" />
+            Historical results
+          </Link>
+        }
+      />
+
+      <Container className="py-8">
+        <section aria-labelledby="published-today" className="mb-8">
+          <h2 id="published-today" className="mb-4 text-lg font-semibold tracking-tight">
+            Published today
+            <span className="ml-2 text-sm font-normal text-muted tabular">
+              ({published.length})
+            </span>
+          </h2>
+
+          {published.length === 0 ? (
+            <Card>
+              <EmptyState
+                title="Nothing has been published yet today"
+                description="The first slot has not completed. Values appear here automatically as each category publishes."
+                action={
+                  <Link href="/history" className={buttonClass("secondary")}>
+                    See yesterday&apos;s results
+                  </Link>
+                }
+              />
+            </Card>
+          ) : (
+            <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+              {published.map((summary) => (
+                <li key={summary.category.id}>
+                  <ResultCard entry={summary.today!} category={summary.category} />
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+
+        <section aria-labelledby="schedule-today">
+          <Card>
+            <CardHeader
+              title={<span id="schedule-today">Today&apos;s schedule</span>}
+              description="Every category in slot order, including those still to publish."
+            />
+
+            {summaries.length === 0 ? (
+              <EmptyState title="No categories are configured" />
+            ) : (
+              <>
+                <table className="hidden w-full border-collapse text-sm sm:table">
+                  <caption className="sr-only">
+                    Publication schedule and status for {formatDate(today)}
+                  </caption>
+                  <thead className="border-b border-line bg-surface-2 text-xs text-muted uppercase">
+                    <tr>
+                      <th scope="col" className="px-4 py-2.5 text-left font-medium">
+                        Category
+                      </th>
+                      <th scope="col" className="px-4 py-2.5 text-left font-medium">
+                        Slot
+                      </th>
+                      <th scope="col" className="px-4 py-2.5 text-center font-medium">
+                        Result
+                      </th>
+                      <th scope="col" className="px-4 py-2.5 text-left font-medium">
+                        Status
+                      </th>
+                      <th scope="col" className="px-4 py-2.5 text-right font-medium">
+                        Published
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {summaries.map(({ category, today: entry }) => (
+                      <tr key={category.id} className="border-b border-line last:border-0">
+                        <th scope="row" className="px-4 py-3 text-left font-medium">
+                          <Link
+                            href={`/categories/${category.slug}`}
+                            className="text-accent hover:underline"
+                          >
+                            {category.name}
+                          </Link>
+                          {category.status === "paused" ? (
+                            <span className="ml-2 text-xs font-normal text-muted">paused</span>
+                          ) : null}
+                        </th>
+                        <td className="px-4 py-3 tabular text-muted">
+                          {formatSchedule(category.scheduleTime)}
+                        </td>
+                        <td className="px-4 py-3 text-center">
+                          <ResultValue value={entry?.value ?? null} size="sm" />
+                        </td>
+                        <td className="px-4 py-3">
+                          {entry ? (
+                            <StatusBadge status={entry.status} />
+                          ) : (
+                            <span className="text-xs text-muted">No entry today</span>
+                          )}
+                        </td>
+                        <td className="px-4 py-3 text-right tabular text-muted">
+                          {formatTime(entry?.publishedAt ?? null)}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+
+                <ul className="divide-y divide-line sm:hidden">
+                  {summaries.map(({ category, today: entry }) => (
+                    <li key={category.id} className="flex items-center gap-3 px-4 py-3">
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-sm font-medium">
+                          <Link
+                            href={`/categories/${category.slug}`}
+                            className="text-accent hover:underline"
+                          >
+                            {category.name}
+                          </Link>
+                        </p>
+                        <p className="text-xs text-muted tabular">
+                          Slot {formatSchedule(category.scheduleTime)}
+                          {entry?.publishedAt ? ` · published ${formatTime(entry.publishedAt)}` : ""}
+                        </p>
+                        <p className="mt-1.5">
+                          {entry ? (
+                            <StatusBadge status={entry.status} />
+                          ) : (
+                            <span className="text-xs text-muted">No entry today</span>
+                          )}
+                        </p>
+                      </div>
+                      <ResultValue value={entry?.value ?? null} />
+                    </li>
+                  ))}
+                </ul>
+              </>
+            )}
+          </Card>
+
+          {upcoming.length > 0 ? (
+            <p className="mt-3 text-sm text-muted">
+              {upcoming.length} {upcoming.length === 1 ? "category is" : "categories are"} still
+              to publish today.
+            </p>
+          ) : null}
+        </section>
+      </Container>
+    </>
+  );
+}
