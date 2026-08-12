@@ -12,6 +12,8 @@ import type { StatisticsQuery } from "./query";
  */
 
 const WEEKDAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+/** Axis labels: full weekday names overlap on a phone-width chart. */
+const WEEKDAYS_SHORT = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
 function lastNDates(days: number): string[] {
   const out: string[] = [];
@@ -97,7 +99,11 @@ export function getStatistics(q: StatisticsQuery): Statistics {
     const [y, m, d] = row.date.split("-").map(Number);
     weekdayCounts[new Date(y, m - 1, d).getDay()] += 1;
   }
-  const weekdayActivity = WEEKDAYS.map((day, i) => ({ day, count: weekdayCounts[i] }));
+  const weekdayActivity = WEEKDAYS.map((day, i) => ({
+    day,
+    short: WEEKDAYS_SHORT[i],
+    count: weekdayCounts[i],
+  }));
 
   const range = getArchiveRange();
 

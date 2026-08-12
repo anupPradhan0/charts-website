@@ -8,7 +8,7 @@ export function Footer() {
 
   return (
     <footer className="mt-12 border-t border-line bg-surface">
-      <div className="mx-auto grid max-w-7xl gap-8 px-4 py-10 sm:px-6 md:grid-cols-3 lg:px-8">
+      <div className="mx-auto grid max-w-7xl gap-6 px-4 py-8 sm:gap-8 sm:px-6 sm:py-10 md:grid-cols-3 lg:px-8">
         <div>
           <div className="flex items-center gap-2 font-semibold tracking-tight">
             <span className="grid size-8 place-items-center rounded-lg bg-accent text-accent-fg">
@@ -16,7 +16,7 @@ export function Footer() {
             </span>
             Numera
           </div>
-          <p className="mt-3 max-w-xs text-sm text-muted">
+          <p className="mt-3 max-w-xs text-sm text-muted text-pretty">
             A results and statistics portal. Every category, schedule and value on this site is
             fictional demonstration data.
           </p>
@@ -26,10 +26,13 @@ export function Footer() {
           <h2 id="footer-pages" className="text-sm font-semibold">
             Pages
           </h2>
-          <ul className="mt-3 space-y-2">
+          <ul className="mt-1 grid grid-cols-2 gap-x-4 md:grid-cols-1">
             {NAV_ITEMS.map((item) => (
               <li key={item.href}>
-                <Link href={item.href} className="text-sm text-muted hover:text-fg">
+                <Link
+                  href={item.href}
+                  className="-mx-2 flex min-h-11 items-center rounded-lg px-2 text-sm text-muted hover:text-fg md:min-h-9"
+                >
                   {item.label}
                 </Link>
               </li>
@@ -41,14 +44,14 @@ export function Footer() {
           <h2 id="footer-categories" className="text-sm font-semibold">
             Categories
           </h2>
-          <ul className="mt-3 grid grid-cols-2 gap-x-4 gap-y-2">
+          <ul className="mt-1 grid grid-cols-2 gap-x-4">
             {CATEGORIES.map((category) => (
               <li key={category.slug}>
                 <Link
                   href={`/categories/${category.slug}`}
-                  className="text-sm text-muted hover:text-fg"
+                  className="-mx-2 flex min-h-11 items-center rounded-lg px-2 text-sm text-muted hover:text-fg md:min-h-9"
                 >
-                  {category.name}
+                  <span className="truncate">{category.name}</span>
                 </Link>
               </li>
             ))}
@@ -57,7 +60,7 @@ export function Footer() {
       </div>
 
       <div className="border-t border-line">
-        <div className="mx-auto flex max-w-7xl flex-col gap-2 px-4 py-5 text-xs text-muted sm:flex-row sm:items-center sm:justify-between sm:px-6 lg:px-8">
+        <div className="mx-auto flex max-w-7xl flex-col gap-2 px-4 py-5 text-xs text-muted text-pretty sm:flex-row sm:items-center sm:justify-between sm:px-6 lg:px-8">
           <p>© {year} Numera. Demonstration project — not affiliated with any real service.</p>
           <p>
             All data is generated. Nothing on this site is an offer, a service, or a

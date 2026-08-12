@@ -44,8 +44,8 @@ export default async function CategoriesPage({
         breadcrumbs={[{ href: "/", label: "Home" }, { label: "Categories" }]}
       />
 
-      <Container className="py-8">
-        <form method="get" role="search" className="mb-6 flex max-w-md gap-2">
+      <Container className="py-6 sm:py-8">
+        <form method="get" role="search" className="mb-5 flex max-w-md gap-2 sm:mb-6">
           <div className="relative flex-1">
             <label htmlFor="category-search" className="sr-only">
               Filter categories by name
@@ -60,7 +60,7 @@ export default async function CategoriesPage({
               name="search"
               defaultValue={search}
               placeholder="Filter categories…"
-              className="h-10 w-full rounded-lg border border-line bg-surface pr-3 pl-9 text-sm"
+              className="h-11 w-full rounded-lg border border-line bg-surface pr-3 pl-9 text-base sm:h-10 sm:text-sm"
             />
           </div>
           <button type="submit" className={buttonClass("secondary")}>
@@ -76,7 +76,7 @@ export default async function CategoriesPage({
           <Card>
             <EmptyState
               icon={<SearchX className="size-8" aria-hidden="true" />}
-              title={`No category matches “${search}”`}
+              title={`No category matches “${search.slice(0, 40)}”`}
               description="Check the spelling, or clear the filter to see all categories."
               action={
                 <Link href="/categories" className={buttonClass("secondary")}>
@@ -86,7 +86,7 @@ export default async function CategoriesPage({
             />
           </Card>
         ) : (
-          <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          <ul className="grid gap-2.5 sm:grid-cols-2 sm:gap-3 lg:grid-cols-3 xl:grid-cols-4">
             {summaries.map((summary) => (
               <li key={summary.category.id}>
                 <CategoryCard summary={summary} />

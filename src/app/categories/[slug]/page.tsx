@@ -31,9 +31,17 @@ import {
 } from "@/lib/utils/format";
 import { canonical } from "@/lib/site";
 
-export const dynamic = "force-dynamic";
+/**
+ * The category set is a fixed, known list, so the router is told exactly which
+ * slugs exist. `dynamicParams = false` makes an unknown slug a real 404 from
+ * the routing layer — `notFound()` during render can only produce a soft 404
+ * here, because the page streams its response and the status is already sent.
+ *
+ * No `force-dynamic` is needed: reading `searchParams` opts the page into
+ * per-request rendering on its own.
+ */
+export const dynamicParams = false;
 
-/** Slugs are a fixed, small set — pre-generate the route params. */
 export function generateStaticParams() {
   return CATEGORIES.map((c) => ({ slug: c.slug }));
 }
@@ -125,11 +133,11 @@ export default async function CategoryDetailPage({
         }
       />
 
-      <Container className="py-8">
+      <Container className="py-6 sm:py-8">
         {/* Current value + key numbers ------------------------------------ */}
-        <div className="mb-8 grid gap-4 lg:grid-cols-3">
-          <Card className="flex flex-col items-center justify-center p-6 text-center">
-            <p className="text-xs font-medium tracking-wide text-muted uppercase">
+        <div className="mb-6 grid gap-3 sm:gap-4 sm:mb-8 lg:grid-cols-3">
+          <Card className="flex flex-col items-center justify-center p-4 text-center sm:p-6">
+            <p className="text-xs font-medium text-muted">
               {today ? "Today's result" : "Most recent result"}
             </p>
             <div className="my-3">
@@ -145,7 +153,7 @@ export default async function CategoryDetailPage({
             )}
           </Card>
 
-          <div className="grid gap-3 sm:grid-cols-2 lg:col-span-2">
+          <div className="grid grid-cols-2 gap-2.5 sm:gap-3 lg:col-span-2">
             <StatTile
               label="Archived entries"
               value={publishedCount.toLocaleString("en-GB")}
@@ -175,14 +183,14 @@ export default async function CategoryDetailPage({
         </div>
 
         {/* Charts ---------------------------------------------------------- */}
-        <div className="mb-8 grid gap-4 lg:grid-cols-2">
+        <div className="mb-6 grid gap-3 sm:gap-4 sm:mb-8 lg:grid-cols-2">
           <Card>
             <CardHeader
               title="Publication activity"
               description="Entries published per day over the last 30 days."
               as="h3"
             />
-            <div className="p-4">
+            <div className="p-2 sm:p-4">
               <TrendChart
                 data={stats.resultsOverTime}
                 caption={`${category.name}: entries published per day over the last 30 days`}
@@ -196,7 +204,7 @@ export default async function CategoryDetailPage({
               description="How archived values fall across the 00–99 range."
               as="h3"
             />
-            <div className="p-4">
+            <div className="p-2 sm:p-4">
               <SimpleBarChart
                 data={stats.distribution}
                 labelKey="bucket"

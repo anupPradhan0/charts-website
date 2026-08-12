@@ -37,7 +37,7 @@ export function CardHeader({
   as?: "h2" | "h3";
 }) {
   return (
-    <div className="flex flex-wrap items-start justify-between gap-3 border-b border-line px-4 py-3 sm:px-5">
+    <div className="flex flex-wrap items-start justify-between gap-x-3 gap-y-2 border-b border-line px-4 py-3 sm:px-5">
       <div className="min-w-0">
         <Tag className="text-sm font-semibold tracking-tight text-fg sm:text-base">{title}</Tag>
         {description ? (
@@ -61,12 +61,14 @@ export function SectionHeader({
   id?: string;
 }) {
   return (
-    <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
+    <div className="mb-3 flex flex-wrap items-end justify-between gap-x-3 gap-y-1 sm:mb-4">
       <div>
-        <h2 id={id} className="text-lg font-semibold tracking-tight sm:text-xl">
+        <h2 id={id} className="text-base font-semibold tracking-tight sm:text-lg lg:text-xl">
           {title}
         </h2>
-        {description ? <p className="mt-1 text-sm text-muted">{description}</p> : null}
+        {description ? (
+          <p className="mt-1 text-sm text-muted text-pretty">{description}</p>
+        ) : null}
       </div>
       {action}
     </div>
@@ -141,7 +143,7 @@ export function ResultValue({
   const sizes = {
     sm: "text-xl",
     md: "text-3xl",
-    lg: "text-5xl sm:text-6xl",
+    lg: "text-4xl min-[380px]:text-5xl sm:text-6xl",
   } as const;
   if (value === null) {
     return (
@@ -174,7 +176,7 @@ export function buttonClass(
   className?: string,
 ): string {
   return cn(
-    "inline-flex min-h-9 items-center justify-center gap-1.5 rounded-lg border px-3 py-1.5",
+    "inline-flex min-h-11 items-center justify-center gap-1.5 rounded-lg border px-3.5 py-2 sm:min-h-9 sm:px-3 sm:py-1.5",
     "text-sm font-medium transition-colors disabled:pointer-events-none disabled:opacity-50",
     BUTTON_VARIANTS[variant],
     className,
@@ -193,13 +195,15 @@ export function StatTile({
   icon?: ReactNode;
 }) {
   return (
-    <Card className="p-4">
+    <Card className="p-3 sm:p-4">
       <div className="flex items-start justify-between gap-2">
-        <p className="text-xs font-medium tracking-wide text-muted uppercase">{label}</p>
+        <p className="text-xs font-medium text-muted">{label}</p>
         {icon ? <span className="text-subtle">{icon}</span> : null}
       </div>
-      <p className="mt-2 text-2xl font-semibold tabular tracking-tight">{value}</p>
-      {hint ? <p className="mt-1 text-xs text-muted">{hint}</p> : null}
+      <p className="mt-1.5 text-xl font-semibold tabular tracking-tight break-anywhere sm:mt-2 sm:text-2xl">
+        {value}
+      </p>
+      {hint ? <p className="mt-1 text-xs text-muted text-pretty">{hint}</p> : null}
     </Card>
   );
 }
@@ -225,13 +229,13 @@ export function EmptyState({
   icon?: ReactNode;
 }) {
   return (
-    <div className="flex flex-col items-center justify-center px-6 py-12 text-center">
+    <div className="flex flex-col items-center justify-center px-4 py-10 text-center sm:px-6 sm:py-12">
       {icon ? <div className="mb-3 text-subtle">{icon}</div> : null}
-      <p className="text-sm font-semibold text-fg">{title}</p>
+      <p className="text-sm font-semibold text-fg break-anywhere">{title}</p>
       {description ? (
-        <p className="mt-1 max-w-sm text-sm text-muted">{description}</p>
+        <p className="mt-1 max-w-sm text-sm text-muted text-pretty">{description}</p>
       ) : null}
-      {action ? <div className="mt-4">{action}</div> : null}
+      {action ? <div className="mt-4 w-full sm:w-auto">{action}</div> : null}
     </div>
   );
 }
@@ -248,9 +252,9 @@ export function ErrorState({
   return (
     <div
       role="alert"
-      className="flex flex-col items-center justify-center rounded-card border border-danger/30 bg-danger-soft px-6 py-10 text-center"
+      className="flex flex-col items-center justify-center rounded-card border border-danger/30 bg-danger-soft px-4 py-8 text-center sm:px-6 sm:py-10"
     >
-      <p className="text-sm font-semibold text-danger">{title}</p>
+      <p className="text-sm font-semibold text-danger break-anywhere">{title}</p>
       {description ? (
         <p className="mt-1 max-w-sm text-sm text-muted">{description}</p>
       ) : null}

@@ -77,6 +77,6 @@ export interface Statistics {
   distribution: { bucket: string; count: number; share: number }[];
   /** Publications grouped by hour of day. */
   updateFrequency: { hour: string; count: number }[];
-  /** Days of the week by publication volume. */
-  weekdayActivity: { day: string; count: number }[];
+  /** Days of the week by publication volume. `short` is the axis label. */
+  weekdayActivity: { day: string; short: string; count: number }[];
 }

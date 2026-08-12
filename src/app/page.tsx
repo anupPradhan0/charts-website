@@ -51,14 +51,14 @@ export default function HomePage() {
     <>
       {/* Hero ------------------------------------------------------------- */}
       <section className="border-b border-line bg-surface">
-        <Container className="py-8 sm:py-12">
+        <Container className="py-6 sm:py-12">
           <p className="text-xs font-medium tracking-wide text-accent uppercase">
             {SITE.tagline}
           </p>
-          <h1 className="mt-2 max-w-3xl text-3xl font-semibold tracking-tight sm:text-4xl">
+          <h1 className="mt-1.5 max-w-3xl text-2xl font-semibold tracking-tight text-balance sm:mt-2 sm:text-3xl lg:text-4xl">
             Every published result, and the statistics behind them
           </h1>
-          <p className="mt-3 max-w-2xl text-sm text-muted sm:text-base">
+          <p className="mt-2.5 max-w-2xl text-sm text-muted text-pretty sm:mt-3 sm:text-base">
             {stats.summary.totalCategories} categories publish on a fixed daily schedule. This
             board shows what has been published today, what is still to come, and how to reach{" "}
             {pluralize(stats.summary.publishedResults, "archived entry", "archived entries")}
@@ -74,26 +74,26 @@ export default function HomePage() {
             ) : null}
           </div>
 
-          <div className="mt-5 flex flex-wrap gap-2">
-            <Link href="/results" className={buttonClass("primary")}>
+          <div className="mt-4 grid grid-cols-2 gap-2 sm:mt-5 sm:flex sm:flex-wrap">
+            <Link href="/results" className={buttonClass("primary", "col-span-2 sm:col-span-1")}>
               Current results
               <ArrowRight className="size-4" aria-hidden="true" />
             </Link>
             <Link href="/history" className={buttonClass("secondary")}>
-              <CalendarRange className="size-4" aria-hidden="true" />
-              Browse the archive
+              <CalendarRange className="size-4 shrink-0" aria-hidden="true" />
+              <span className="truncate">Archive</span>
             </Link>
             <Link href="/statistics" className={buttonClass("secondary")}>
-              <LineChart className="size-4" aria-hidden="true" />
-              Statistics
+              <LineChart className="size-4 shrink-0" aria-hidden="true" />
+              <span className="truncate">Statistics</span>
             </Link>
           </div>
         </Container>
       </section>
 
-      <Container className="py-8 sm:py-10">
+      <Container className="py-6 sm:py-10">
         {/* Statistics overview -------------------------------------------- */}
-        <section aria-labelledby="overview" className="mb-10">
+        <section aria-labelledby="overview" className="mb-8 sm:mb-10">
           <SectionHeader
             id="overview"
             title="At a glance"
@@ -104,7 +104,7 @@ export default function HomePage() {
               </Link>
             }
           />
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="grid grid-cols-2 gap-2.5 sm:gap-3 lg:grid-cols-4">
             <StatTile
               label="Published today"
               value={stats.summary.publishedToday}
@@ -133,7 +133,7 @@ export default function HomePage() {
         </section>
 
         {/* Today's board --------------------------------------------------- */}
-        <section aria-labelledby="board" className="mb-10">
+        <section aria-labelledby="board" className="mb-8 sm:mb-10">
           <SectionHeader
             id="board"
             title="Current results"
@@ -152,7 +152,7 @@ export default function HomePage() {
               />
             </Card>
           ) : (
-            <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            <ul className="grid gap-2.5 min-[380px]:grid-cols-2 sm:gap-3 lg:grid-cols-4">
               {board.map(({ summary, entry }) => (
                 <li key={summary.category.id}>
                   <ResultCard entry={entry} category={summary.category} />
@@ -163,7 +163,7 @@ export default function HomePage() {
         </section>
 
         {/* Recently published + archive access ----------------------------- */}
-        <section aria-labelledby="recent" className="mb-10 grid gap-4 lg:grid-cols-3">
+        <section aria-labelledby="recent" className="mb-8 grid gap-3 sm:gap-4 sm:mb-10 lg:grid-cols-3">
           <div className="lg:col-span-2">
             <Card>
               <CardHeader
@@ -193,8 +193,8 @@ export default function HomePage() {
             </Card>
           </div>
 
-          <div className="grid gap-4">
-            <Card className="p-5">
+          <div className="grid gap-3 sm:gap-4">
+            <Card className="p-4 sm:p-5">
               <h3 className="text-sm font-semibold">Historical data</h3>
               <p className="mt-2 text-sm text-muted">
                 The archive holds every entry back to {formatDate(stats.summary.coverageStart)}.
@@ -207,7 +207,7 @@ export default function HomePage() {
               </Link>
             </Card>
 
-            <Card className="p-5">
+            <Card className="p-4 sm:p-5">
               <h3 className="text-sm font-semibold">Publication schedule</h3>
               <dl className="mt-3 space-y-2 text-sm">
                 {summaries.slice(0, 5).map(({ category }) => (
@@ -237,7 +237,7 @@ export default function HomePage() {
               </Link>
             }
           />
-          <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          <ul className="grid gap-2.5 sm:grid-cols-2 sm:gap-3 lg:grid-cols-4">
             {summaries.map((summary) => (
               <li key={summary.category.id}>
                 <CategoryCard summary={summary} />

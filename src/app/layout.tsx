@@ -43,10 +43,10 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
 
         <Header />
 
-        <p className="border-b border-line bg-surface-2 px-4 py-2 text-center text-xs text-muted">
+        <p className="border-b border-line bg-surface-2 px-3 py-1.5 text-center text-xs text-muted text-pretty">
           <Info className="mr-1 inline size-3.5 align-[-2px]" aria-hidden="true" />
-          Demonstration site — every category, schedule and value shown here is fictional
-          generated data.
+          Demonstration site — every category, schedule and value here is fictional generated
+          data.
         </p>
 
         <main id="main" className="flex-1">

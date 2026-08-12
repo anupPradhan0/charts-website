@@ -229,6 +229,26 @@ describe("public pages", () => {
     assert.ok(!table.includes("Metro Results"), "other categories are filtered out");
   });
 
+  /** Regression guard for the bug that broke every phone width: a <table>
+   *  ignores `width: 1px`, so `sr-only` must sit on a wrapping element, never
+   *  on the table itself. Cheap to assert in markup, expensive to spot by eye. */
+  it("never puts sr-only directly on a table", async () => {
+    for (const path of ["/statistics", "/categories/alpha-market"]) {
+      const { text } = await get(path);
+      assert.ok(
+        !/<table[^>]*class="[^"]*sr-only/.test(text),
+        `${path}: sr-only on a <table> overflows the viewport`,
+      );
+    }
+  });
+
+  it("keeps result tables inside a scroll container", async () => {
+    const { text } = await get("/history");
+    // The wide table must live in a `scroll-x` box so a narrow tablet scrolls
+    // the table instead of the whole page.
+    assert.match(markup(text), /scroll-x[^"]*hidden md:block/);
+  });
+
   it("degrades gracefully on nonsense query parameters", async () => {
     const { response, text } = await get("/history?page=abc&sort=chaos&startDate=nope");
     assert.equal(response.status, 200, "pages ignore bad params rather than erroring");

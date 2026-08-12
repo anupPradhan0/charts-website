@@ -183,10 +183,17 @@ parameter and renders rather than erroring.
 
 ## Notes on the implementation
 
-- **Responsive.** Mobile-first. The archive table becomes cards below `md`
-  rather than a horizontal scroll; the filter panel collapses behind a
-  disclosure below `lg`; navigation becomes a menu below `lg`. Both the table
-  and the card list are server-rendered and toggled by CSS.
+- **Mobile-first.** Phones are the primary target. Layouts start at 320px and
+  add columns upward: stat tiles are 2-up from 320px, result cards go 1 → 2
+  (380px) → 4 (1024px), category cards 1 → 2 → 4. The archive table becomes
+  cards below `md` with a horizontally scrollable sort bar; wide tables live in
+  `scroll-x` containers so a narrow tablet scrolls the table, never the page.
+  The filter panel collapses behind a disclosure below `lg` and pairs the date
+  fields on one row. Form controls are 44px tall with 16px text — anything
+  smaller makes iOS zoom the viewport on focus. Navigation is a 56px bar with a
+  scroll-locking menu sheet below `lg`.
+- **No `overflow-x: hidden`.** Overflow is measured, not hidden. See the audit
+  note below.
 - **Accessibility.** One `h1` per page, semantic tables with `<caption>` and
   `aria-sort`, labelled form controls, a single global focus ring, a skip link,
   `role="status"` on result counts and update stamps, and a screen-reader table
@@ -197,6 +204,37 @@ parameter and renders rather than erroring.
 - **Performance.** Everything is a server component except the header menu, the
   clock, the filter panel, the auto-refresh control and the charts. API
   responses carry a short `s-maxage` so repeat traffic skips the render path.
+
+## Responsive audit
+
+Layout was verified by measurement, not by eye. A temporary harness loaded every
+page into a same-origin iframe at 320 / 360 / 375 / 390 / 414 / 430 / 768 / 1024
+/ 1440px and compared `documentElement.scrollWidth` against the frame width,
+reporting the outermost offending element and any interactive control under
+40px. Ten paths (including a 52-character search term and a filtered, paginated
+archive) came back clean at all nine widths.
+
+The one bug it caught is worth knowing about: `sr-only` on a `<table>` does not
+constrain it. A table treats `width: 1px` as a minimum and expands to its
+content regardless of `overflow: hidden`, so the screen-reader data tables
+behind the charts were pushing the page 160px wide at 320px. The class belongs
+on a wrapping `<div>`. `tests/api.test.mjs` guards against it coming back.
+
+Two deliberate exceptions to the 44px touch target: breadcrumb links and inline
+table links are 32px. WCAG 2.2 AA requires 24×24 for dense inline navigation;
+44px breadcrumbs would dominate the top of every page.
+
+## Known issue
+
+Unknown category URLs (`/categories/does-not-exist`) render the not-found page
+correctly but return **HTTP 200 instead of 404** — a soft 404. `notFound()`
+cannot set the status once the route has begun streaming its response. The
+failing test (`404s an unknown category page`) is left in place rather than
+weakened. Ruled out so far: the `loading.tsx` boundary, `next/dynamic` chart
+imports, and `dynamicParams = false` at the routing layer. The root `/zzz` 404
+works correctly, so this is specific to this route segment. Next step would be
+bisecting the page's component tree for whatever introduces the streaming
+boundary.
 
 ## Deployment
 

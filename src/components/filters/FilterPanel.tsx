@@ -71,7 +71,10 @@ export function FilterPanel({
     router.push(`${basePath}${buildQuery({ ...values, page: 1 })}`, { scroll: false });
   });
 
-  const field = "h-10 w-full rounded-lg border border-line bg-surface px-3 text-sm";
+  // 16px text is deliberate: iOS zooms the viewport when a focused input is
+  // smaller than that, which reads as the page "jumping" on every tap.
+  const field =
+    "h-11 w-full rounded-lg border border-line bg-surface px-3 text-base sm:h-10 sm:text-sm";
   const label = "mb-1 block text-xs font-medium text-muted";
 
   return (
@@ -105,6 +108,7 @@ export function FilterPanel({
         className={cn("px-4 pb-4 lg:block lg:px-5", open ? "block" : "hidden")}
       >
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-6">
+          {/* Order matters on mobile: search first, then scope, then sort. */}
           <div className={lockCategory ? "sm:col-span-2 lg:col-span-2" : ""}>
             <label className={label} htmlFor={`${id}-search`}>
               Search
@@ -134,43 +138,50 @@ export function FilterPanel({
             </div>
           ) : null}
 
-          <div>
-            <label className={label} htmlFor={`${id}-start`}>
-              From
-            </label>
-            <input
-              id={`${id}-start`}
-              type="date"
-              min={min}
-              max={max}
-              className={field}
-              aria-invalid={errors.startDate ? true : undefined}
-              aria-describedby={errors.startDate ? `${id}-start-error` : undefined}
-              {...register("startDate", {
-                validate: (value, values) =>
-                  !value || !values.endDate || value <= values.endDate ||
-                  "Start date must be on or before the end date",
-              })}
-            />
-            {errors.startDate ? (
-              <p id={`${id}-start-error`} className="mt-1 text-xs text-danger">
-                {errors.startDate.message}
-              </p>
-            ) : null}
-          </div>
+          {/* The date pair shares one row on phones — two full-width date
+              fields would push everything else below the fold. `contents`
+              dissolves the wrapper once the panel is a wide grid. */}
+          <div className="grid grid-cols-2 gap-3 lg:contents">
+            <div>
+              <label className={label} htmlFor={`${id}-start`}>
+                From
+              </label>
+              <input
+                id={`${id}-start`}
+                type="date"
+                min={min}
+                max={max}
+                className={field}
+                aria-invalid={errors.startDate ? true : undefined}
+                aria-describedby={errors.startDate ? `${id}-start-error` : undefined}
+                {...register("startDate", {
+                  validate: (value, values) =>
+                    !value ||
+                    !values.endDate ||
+                    value <= values.endDate ||
+                    "Start date must be on or before the end date",
+                })}
+              />
+              {errors.startDate ? (
+                <p id={`${id}-start-error`} className="mt-1 text-xs text-danger">
+                  {errors.startDate.message}
+                </p>
+              ) : null}
+            </div>
 
-          <div>
-            <label className={label} htmlFor={`${id}-end`}>
-              To
-            </label>
-            <input
-              id={`${id}-end`}
-              type="date"
-              min={min}
-              max={max}
-              className={field}
-              {...register("endDate")}
-            />
+            <div>
+              <label className={label} htmlFor={`${id}-end`}>
+                To
+              </label>
+              <input
+                id={`${id}-end`}
+                type="date"
+                min={min}
+                max={max}
+                className={field}
+                {...register("endDate")}
+              />
+            </div>
           </div>
 
           <div>
@@ -201,13 +212,13 @@ export function FilterPanel({
           </div>
         </div>
 
-        <div className="mt-4 flex flex-wrap items-center gap-2">
-          <button type="submit" className={buttonClass("primary")}>
+        <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:items-center">
+          <button type="submit" className={buttonClass("primary", "w-full sm:w-auto")}>
             Apply filters
           </button>
           <button
             type="button"
-            className={buttonClass("ghost")}
+            className={buttonClass("ghost", "w-full sm:w-auto")}
             onClick={() => {
               reset({
                 search: "",

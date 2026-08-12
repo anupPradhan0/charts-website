@@ -54,7 +54,7 @@ export default async function HistoryPage({
         }
       />
 
-      <Container className="py-8">
+      <Container className="py-6 sm:py-8">
         <Card>
           <CardHeader
             title="Archive"

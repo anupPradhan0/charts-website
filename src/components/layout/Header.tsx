@@ -8,12 +8,21 @@ import { cn } from "@/lib/utils/format";
 import { LiveClock } from "./LiveClock";
 import { NAV_ITEMS, isActivePath as isActive } from "./nav";
 
+/**
+ * Mobile-first header.
+ *
+ * Phones get a compact 56px bar carrying only the brand, search and the menu
+ * button — nothing that can overflow. The full navigation appears inline from
+ * `lg`. The menu panel is a scrollable sheet: it never exceeds the viewport,
+ * it locks the page behind it, Escape closes it, and every item is a 48px
+ * target.
+ */
 export function Header() {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
   const close = () => setOpen(false);
 
-  // Escape closes the menu, and the body must not scroll behind the panel.
+  // Escape closes the menu, and the page must not scroll behind the sheet.
   useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => {
@@ -35,15 +44,19 @@ export function Header() {
         : "text-muted hover:bg-surface-2 hover:text-fg",
     );
 
+  const iconButton =
+    "grid size-11 shrink-0 place-items-center rounded-lg border border-line text-muted";
+
   return (
     <header className="sticky top-0 z-40 border-b border-line bg-surface/95 backdrop-blur supports-[backdrop-filter]:bg-surface/80">
-      <div className="mx-auto flex h-16 max-w-7xl items-center gap-3 px-4 sm:px-6 lg:px-8">
+      <div className="mx-auto flex h-14 max-w-7xl items-center gap-2 px-3 sm:gap-3 sm:px-6 lg:h-16 lg:px-8">
         <Link
           href="/"
-          className="flex shrink-0 items-center gap-2 font-semibold tracking-tight"
+          onClick={close}
+          className="-mx-1 flex min-h-11 shrink-0 items-center gap-2 rounded-lg px-1 font-semibold tracking-tight"
           aria-label="Numera — home"
         >
-          <span className="grid size-8 place-items-center rounded-lg bg-accent text-accent-fg">
+          <span className="grid size-8 shrink-0 place-items-center rounded-lg bg-accent text-accent-fg">
             <BarChart3 className="size-4.5" aria-hidden="true" />
           </span>
           <span className="text-base">Numera</span>
@@ -65,12 +78,14 @@ export function Header() {
           </ul>
         </nav>
 
-        <div className="ml-auto flex items-center gap-2">
-          <div className="hidden md:block">
+        <div className="ml-auto flex min-w-0 items-center gap-2">
+          <div className="hidden xl:block">
             <LiveClock />
           </div>
 
-          <form action="/search" role="search" className="hidden sm:block">
+          {/* The inline search field only appears where there is room for it
+              without squeezing the brand. */}
+          <form action="/search" role="search" className="hidden lg:block">
             <label htmlFor="header-search" className="sr-only">
               Search results and categories
             </label>
@@ -84,17 +99,18 @@ export function Header() {
                 type="search"
                 name="q"
                 placeholder="Search…"
-                className="h-9 w-40 rounded-lg border border-line bg-surface-2 pr-3 pl-8 text-sm placeholder:text-subtle lg:w-56"
+                className="h-9 w-40 rounded-lg border border-line bg-surface-2 pr-3 pl-8 text-sm placeholder:text-subtle xl:w-56"
               />
             </div>
           </form>
 
           <Link
             href="/search"
+            onClick={close}
             aria-label="Search"
-            className="grid size-9 place-items-center rounded-lg border border-line text-muted sm:hidden"
+            className={cn(iconButton, "lg:hidden")}
           >
-            <Search className="size-4" aria-hidden="true" />
+            <Search className="size-5" aria-hidden="true" />
           </Link>
 
           <button
@@ -102,12 +118,12 @@ export function Header() {
             onClick={() => setOpen((v) => !v)}
             aria-expanded={open}
             aria-controls="mobile-nav"
-            className="grid size-9 place-items-center rounded-lg border border-line text-muted lg:hidden"
+            className={cn(iconButton, "lg:hidden")}
           >
             {open ? (
-              <X className="size-4" aria-hidden="true" />
+              <X className="size-5" aria-hidden="true" />
             ) : (
-              <Menu className="size-4" aria-hidden="true" />
+              <Menu className="size-5" aria-hidden="true" />
             )}
             <span className="sr-only">{open ? "Close menu" : "Open menu"}</span>
           </button>
@@ -118,16 +134,16 @@ export function Header() {
         <nav
           id="mobile-nav"
           aria-label="Primary"
-          className="border-t border-line bg-surface lg:hidden"
+          className="max-h-[calc(100dvh-3.5rem)] overflow-y-auto overscroll-contain border-t border-line bg-surface lg:hidden"
         >
-          <ul className="mx-auto max-w-7xl px-4 py-2 sm:px-6">
+          <ul className="mx-auto max-w-7xl px-3 py-2 sm:px-6">
             {NAV_ITEMS.map((item) => (
               <li key={item.href}>
                 <Link
                   href={item.href}
                   onClick={close}
                   className={cn(
-                    "block rounded-lg px-3 py-3 text-base font-medium",
+                    "flex min-h-12 items-center rounded-lg px-3 text-base font-medium",
                     isActive(pathname, item.href)
                       ? "bg-accent-soft text-accent"
                       : "text-fg hover:bg-surface-2",
@@ -138,7 +154,7 @@ export function Header() {
                 </Link>
               </li>
             ))}
-            <li className="px-3 py-3 md:hidden">
+            <li className="border-t border-line px-3 py-3 xl:hidden">
               <LiveClock />
             </li>
           </ul>

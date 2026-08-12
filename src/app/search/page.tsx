@@ -35,8 +35,8 @@ export default async function SearchPage({
         breadcrumbs={[{ href: "/", label: "Home" }, { label: "Search" }]}
       />
 
-      <Container className="py-8">
-        <form method="get" role="search" className="mb-6 flex max-w-xl gap-2">
+      <Container className="py-6 sm:py-8">
+        <form method="get" role="search" className="mb-5 flex max-w-xl gap-2 sm:mb-6">
           <div className="relative flex-1">
             <label htmlFor="q" className="sr-only">
               Search categories, dates and values
@@ -53,7 +53,7 @@ export default async function SearchPage({
               defaultValue={term}
               maxLength={64}
               placeholder="e.g. Alpha, 2026-08-12, or 42"
-              className="h-11 w-full rounded-lg border border-line bg-surface pr-3 pl-9 text-sm"
+              className="h-11 w-full rounded-lg border border-line bg-surface pr-3 pl-9 text-base"
             />
           </div>
           <button type="submit" className={buttonClass("primary", "h-11")}>
@@ -68,12 +68,12 @@ export default async function SearchPage({
         {!term ? (
           <Card>
             <CardHeader title="Start typing" description="Or jump straight into a category." />
-            <ul className="grid gap-2 p-4 sm:grid-cols-2 lg:grid-cols-4">
+            <ul className="grid gap-2 p-3 sm:grid-cols-2 sm:p-4 lg:grid-cols-4">
               {categories.map((c) => (
                 <li key={c.slug}>
                   <Link
                     href={`/categories/${c.slug}`}
-                    className="block rounded-lg border border-line px-3 py-2 text-sm hover:bg-surface-2"
+                    className="flex min-h-11 items-center rounded-lg border border-line px-3 text-sm hover:bg-surface-2"
                   >
                     {c.name}
                   </Link>
@@ -85,7 +85,7 @@ export default async function SearchPage({
           <Card>
             <EmptyState
               icon={<SearchX className="size-8" aria-hidden="true" />}
-              title={`Nothing matches “${term}”`}
+              title={`Nothing matches “${term.slice(0, 40)}”`}
               description="Try a category name, a full date such as 2026-08-12, or a two-digit value."
               action={
                 <Link href="/history" className={buttonClass("secondary")}>
@@ -98,14 +98,14 @@ export default async function SearchPage({
           <Card>
             <CardHeader
               title={`${hits.length} ${hits.length === 1 ? "match" : "matches"}`}
-              description={`For “${term}”.`}
+              description={`For “${term.slice(0, 40)}”.`}
             />
             <ul className="divide-y divide-line">
               {hits.map((hit) => (
                 <li key={`${hit.type}-${hit.href}-${hit.title}`}>
                   <Link
                     href={hit.href}
-                    className="flex items-center gap-3 px-4 py-3 hover:bg-surface-2"
+                    className="flex min-h-14 items-center gap-3 px-3 py-2.5 hover:bg-surface-2 sm:px-4"
                   >
                     <span className="grid size-9 shrink-0 place-items-center rounded-lg bg-surface-2 text-subtle">
                       {hit.type === "category" ? (

@@ -32,12 +32,14 @@ export function Pagination({
   const pages: number[] = [];
   for (let i = windowStart; i <= windowEnd; i++) pages.push(i);
 
-  const arrow = "inline-flex size-9 items-center justify-center rounded-lg border text-sm";
+  // 44px targets on touch, 36px once there is a pointer and more room.
+  const arrow =
+    "inline-flex size-11 items-center justify-center rounded-lg border text-sm sm:size-9";
 
   return (
     <nav
       aria-label="Pagination"
-      className="flex flex-wrap items-center justify-between gap-3 border-t border-line px-4 py-3"
+      className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 border-t border-line px-4 py-3"
     >
       <p className="text-xs text-muted sm:text-sm" aria-live="polite">
         Showing <span className="font-medium text-fg tabular">{first}</span>–
@@ -45,7 +47,7 @@ export function Pagination({
         <span className="font-medium text-fg tabular">{total.toLocaleString("en-GB")}</span>
       </p>
 
-      <ul className="flex items-center gap-1">
+      <ul className="flex items-center gap-1.5 sm:gap-1">
         <li>
           {page > 1 ? (
             <Link
@@ -85,7 +87,7 @@ export function Pagination({
           </li>
         ))}
 
-        <li className="text-sm text-muted tabular sm:hidden">
+        <li className="px-1 text-sm font-medium text-muted tabular sm:hidden">
           {page} / {totalPages}
         </li>
 

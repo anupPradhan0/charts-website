@@ -58,11 +58,11 @@ export default async function StatisticsPage({
         }
       />
 
-      <Container className="py-8">
+      <Container className="py-6 sm:py-8">
         {/* Scope controls -------------------------------------------------- */}
         <form
           method="get"
-          className="mb-6 flex flex-wrap items-end gap-3 rounded-card border border-line bg-surface p-4"
+          className="mb-5 grid gap-3 rounded-card border border-line bg-surface p-3 sm:mb-6 sm:flex sm:flex-wrap sm:items-end sm:p-4"
         >
           <div>
             <label htmlFor="stats-category" className="mb-1 block text-xs font-medium text-muted">
@@ -72,7 +72,7 @@ export default async function StatisticsPage({
               id="stats-category"
               name="category"
               defaultValue={query.category ?? ""}
-              className="h-10 w-56 max-w-full rounded-lg border border-line bg-surface px-3 text-sm"
+              className="h-11 w-full rounded-lg border border-line bg-surface px-3 text-base sm:h-10 sm:w-56 sm:text-sm"
             >
               <option value="">All categories</option>
               {categories.map((c) => (
@@ -91,7 +91,7 @@ export default async function StatisticsPage({
               id="stats-days"
               name="days"
               defaultValue={String(query.days)}
-              className="h-10 w-40 rounded-lg border border-line bg-surface px-3 text-sm"
+              className="h-11 w-full rounded-lg border border-line bg-surface px-3 text-base sm:h-10 sm:w-40 sm:text-sm"
             >
               {DAY_OPTIONS.map((d) => (
                 <option key={d} value={d}>
@@ -101,17 +101,19 @@ export default async function StatisticsPage({
             </select>
           </div>
 
-          <button type="submit" className={buttonClass("primary")}>
-            Apply
-          </button>
-          {query.category || query.days !== 30 ? (
-            <Link href="/statistics" className={buttonClass("ghost")}>
-              Reset
-            </Link>
-          ) : null}
+          <div className="flex gap-2">
+            <button type="submit" className={buttonClass("primary", "flex-1 sm:flex-none")}>
+              Apply
+            </button>
+            {query.category || query.days !== 30 ? (
+              <Link href="/statistics" className={buttonClass("ghost", "flex-1 sm:flex-none")}>
+                Reset
+              </Link>
+            ) : null}
+          </div>
         </form>
 
-        <p className="mb-6 text-sm text-muted">
+        <p className="mb-5 text-sm text-muted text-pretty sm:mb-6">
           Showing{" "}
           <span className="font-medium text-fg">
             {selected ? selected.name : "all categories"}
@@ -121,7 +123,7 @@ export default async function StatisticsPage({
         </p>
 
         {/* Summary --------------------------------------------------------- */}
-        <div className="mb-8 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="mb-6 grid grid-cols-2 gap-2.5 sm:gap-3 sm:mb-8 lg:grid-cols-4">
           <StatTile
             label="Published entries"
             value={stats.summary.publishedResults.toLocaleString("en-GB")}
@@ -145,14 +147,14 @@ export default async function StatisticsPage({
         </div>
 
         {/* Charts ---------------------------------------------------------- */}
-        <div className="grid gap-4 lg:grid-cols-2">
+        <div className="grid gap-3 sm:gap-4 lg:grid-cols-2">
           <Card className="lg:col-span-2">
             <CardHeader
               title="Publication activity over time"
               description={`Entries published per day for the last ${query.days} days. The dashed line shows entries that exist but are not published.`}
               as="h2"
             />
-            <div className="p-4">
+            <div className="p-2 sm:p-4">
               <TrendChart
                 data={stats.resultsOverTime}
                 caption={`Entries published per day over the last ${query.days} days`}
@@ -167,7 +169,7 @@ export default async function StatisticsPage({
               description="Published entries per category across the whole archive."
               as="h2"
             />
-            <div className="p-4">
+            <div className="p-2 sm:p-4">
               <SimpleBarChart
                 data={stats.categoryActivity}
                 labelKey="name"
@@ -187,7 +189,7 @@ export default async function StatisticsPage({
               description="How published values fall across the 00–99 range. A description of past values, not an indicator of future ones."
               as="h2"
             />
-            <div className="p-4">
+            <div className="p-2 sm:p-4">
               <SimpleBarChart
                 data={stats.distribution}
                 labelKey="bucket"
@@ -205,7 +207,7 @@ export default async function StatisticsPage({
               description="When entries are published, grouped by hour of day."
               as="h2"
             />
-            <div className="p-4">
+            <div className="p-2 sm:p-4">
               <SimpleBarChart
                 data={stats.updateFrequency}
                 labelKey="hour"
@@ -223,10 +225,11 @@ export default async function StatisticsPage({
               description="Published entries by day of the week."
               as="h2"
             />
-            <div className="p-4">
+            <div className="p-2 sm:p-4">
               <SimpleBarChart
                 data={stats.weekdayActivity}
-                labelKey="day"
+                labelKey="short"
+                tableLabelKey="day"
                 valueKey="count"
                 color="var(--chart-5)"
                 caption="Published entries by day of the week"
@@ -236,7 +239,7 @@ export default async function StatisticsPage({
           </Card>
         </div>
 
-        <p className="mt-6 rounded-card border border-line bg-surface-2 p-4 text-sm text-muted">
+        <p className="mt-5 rounded-card border border-line bg-surface-2 p-3 text-sm text-muted text-pretty sm:mt-6 sm:p-4">
           These charts summarise data that has already been published. They are not forecasts and
           are not intended to inform any decision about future values.
         </p>

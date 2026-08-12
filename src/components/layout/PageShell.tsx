@@ -11,7 +11,7 @@ export function Container({
   className?: string;
 }) {
   return (
-    <div className={cn("mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8", className)}>
+    <div className={cn("mx-auto w-full max-w-7xl px-3 sm:px-6 lg:px-8", className)}>
       {children}
     </div>
   );
@@ -20,16 +20,19 @@ export function Container({
 function Breadcrumbs({ trail }: { trail: { href?: string; label: string }[] }) {
   return (
     <nav aria-label="Breadcrumb" className="mb-3">
-      <ol className="flex flex-wrap items-center gap-1 text-xs text-muted">
+      <ol className="flex flex-wrap items-center gap-x-1 text-xs text-muted">
         {trail.map((crumb, i) => (
           <li key={crumb.label} className="flex items-center gap-1">
             {i > 0 ? <ChevronRight className="size-3 text-subtle" aria-hidden="true" /> : null}
             {crumb.href ? (
-              <Link href={crumb.href} className="hover:text-fg">
+              <Link
+                href={crumb.href}
+                className="-mx-1 inline-flex min-h-8 items-center rounded px-1 hover:text-fg"
+              >
                 {crumb.label}
               </Link>
             ) : (
-              <span aria-current="page" className="text-fg">
+              <span aria-current="page" className="inline-flex min-h-8 items-center text-fg">
                 {crumb.label}
               </span>
             )}
@@ -56,18 +59,26 @@ export function PageHeader({
 }) {
   return (
     <div className="border-b border-line bg-surface">
-      <Container className="py-6 sm:py-8">
+      <Container className="py-4 sm:py-8">
         {breadcrumbs ? <Breadcrumbs trail={breadcrumbs} /> : null}
-        <div className="flex flex-wrap items-start justify-between gap-4">
+        <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-3">
           <div className="min-w-0">
-            <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">{title}</h1>
+            <h1 className="text-xl font-semibold tracking-tight text-balance sm:text-2xl lg:text-3xl">
+              {title}
+            </h1>
             {description ? (
-              <p className="mt-2 max-w-2xl text-sm text-muted sm:text-base">{description}</p>
+              <p className="mt-1.5 max-w-2xl text-sm text-muted text-pretty sm:mt-2 sm:text-base">
+                {description}
+              </p>
             ) : null}
           </div>
-          {actions ? <div className="flex flex-wrap gap-2">{actions}</div> : null}
+          {actions ? (
+            <div className="flex w-full flex-wrap gap-2 sm:w-auto">{actions}</div>
+          ) : null}
         </div>
-        {meta ? <div className="mt-4 flex flex-wrap items-center gap-3">{meta}</div> : null}
+        {meta ? (
+          <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1.5 sm:mt-4">{meta}</div>
+        ) : null}
       </Container>
     </div>
   );

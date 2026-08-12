@@ -122,14 +122,20 @@
 @layer base {
   html {
     scroll-behavior: smooth;
+    /* Anchor targets clear the sticky header. */
+    scroll-padding-top: 5rem;
+    /* Stop iOS from inflating text in landscape. */
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
   }
 
   body {
     background: var(--bg);
     color: var(--fg);
     font-family: var(--font-geist-sans), system-ui, sans-serif;
-    /* Nothing on any page may push the viewport sideways. */
-    overflow-x: hidden;
+    /* Deliberately NOT `overflow-x: hidden` — that hides layout bugs instead
+       of fixing them. Overflow is measured at 320-1440px in the audit
+       harness and fixed at the component that causes it. */
   }
 
   /* One focus ring for the whole application. */
@@ -143,10 +149,31 @@
     background: var(--accent-soft);
     color: var(--fg);
   }
+
+  /* User-supplied strings (search terms) must never widen the page. */
+  input,
+  select,
+  textarea {
+    max-width: 100%;
+  }
 }
 
 @utility tabular {
   font-variant-numeric: tabular-nums;
+}
+
+/* Long unbroken strings wrap instead of pushing the layout sideways. */
+@utility break-anywhere {
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+/* Momentum scrolling for the few genuinely tabular regions, without letting
+   the gesture chain up to the page. */
+@utility scroll-x {
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  -webkit-overflow-scrolling: touch;
 }
 
 /* Skip link: off-screen until focused. */

@@ -65,9 +65,9 @@ export default function ResultsPage() {
         }
       />
 
-      <Container className="py-8">
-        <section aria-labelledby="published-today" className="mb-8">
-          <h2 id="published-today" className="mb-4 text-lg font-semibold tracking-tight">
+      <Container className="py-6 sm:py-8">
+        <section aria-labelledby="published-today" className="mb-6 sm:mb-8">
+          <h2 id="published-today" className="mb-3 text-base font-semibold tracking-tight sm:mb-4 sm:text-lg">
             Published today
             <span className="ml-2 text-sm font-normal text-muted tabular">
               ({published.length})
@@ -87,7 +87,7 @@ export default function ResultsPage() {
               />
             </Card>
           ) : (
-            <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            <ul className="grid gap-2.5 min-[380px]:grid-cols-2 sm:gap-3 lg:grid-cols-4">
               {published.map((summary) => (
                 <li key={summary.category.id}>
                   <ResultCard entry={summary.today!} category={summary.category} />
@@ -108,7 +108,10 @@ export default function ResultsPage() {
               <EmptyState title="No categories are configured" />
             ) : (
               <>
-                <table className="hidden w-full border-collapse text-sm sm:table">
+                {/* Five columns need real width; below md the same rows are
+                    rendered as list items instead. */}
+                <div className="scroll-x hidden md:block">
+                <table className="w-full min-w-[34rem] border-collapse text-sm">
                   <caption className="sr-only">
                     Publication schedule and status for {formatDate(today)}
                   </caption>
@@ -165,8 +168,9 @@ export default function ResultsPage() {
                     ))}
                   </tbody>
                 </table>
+                </div>
 
-                <ul className="divide-y divide-line sm:hidden">
+                <ul className="divide-y divide-line md:hidden">
                   {summaries.map(({ category, today: entry }) => (
                     <li key={category.id} className="flex items-center gap-3 px-4 py-3">
                       <div className="min-w-0 flex-1">
