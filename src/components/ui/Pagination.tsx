@@ -1,11 +1,12 @@
 import Link from "next/link";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { buildQuery } from "@/lib/services/query";
-import { cn } from "@/lib/utils/format";
+import { cn, createFormatter } from "@/lib/utils/format";
+import { getT } from "@/lib/i18n";
 
 /** Link-based pagination: works without JavaScript and keeps every filter in
  *  the URL, so any page of results is shareable and back/forward behave. */
-export function Pagination({
+export async function Pagination({
   page,
   totalPages,
   total,
@@ -21,6 +22,9 @@ export function Pagination({
   query: Record<string, unknown>;
 }) {
   if (total === 0) return null;
+
+  const t = await getT();
+  const fmt = createFormatter(t);
 
   const href = (target: number) => `${basePath}${buildQuery(query, { page: target })}`;
   const first = (page - 1) * limit + 1;
@@ -38,13 +42,15 @@ export function Pagination({
 
   return (
     <nav
-      aria-label="Pagination"
+      aria-label={t("pagination.label")}
       className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 border-t border-line px-4 py-3"
     >
-      <p className="text-xs text-muted sm:text-sm" aria-live="polite">
-        Showing <span className="font-medium text-fg tabular">{first}</span>–
-        <span className="font-medium text-fg tabular">{last}</span> of{" "}
-        <span className="font-medium text-fg tabular">{total.toLocaleString("en-GB")}</span>
+      <p className="text-xs text-muted tabular sm:text-sm" aria-live="polite">
+        {t("pagination.showing", {
+          first: fmt.number(first),
+          last: fmt.number(last),
+          total: fmt.number(total),
+        })}
       </p>
 
       <ul className="flex items-center gap-1.5 sm:gap-1">
@@ -53,7 +59,7 @@ export function Pagination({
             <Link
               href={href(page - 1)}
               rel="prev"
-              aria-label="Previous page"
+              aria-label={t("pagination.previousPage")}
               className={cn(arrow, "border-line-strong text-fg hover:bg-surface-2")}
             >
               <ChevronLeft className="size-4" aria-hidden="true" />
@@ -73,7 +79,7 @@ export function Pagination({
             <Link
               href={href(n)}
               aria-current={n === page ? "page" : undefined}
-              aria-label={`Page ${n}`}
+              aria-label={t("pagination.pageNumber", { page: n })}
               className={cn(
                 arrow,
                 "tabular",
@@ -82,13 +88,13 @@ export function Pagination({
                   : "border-line-strong text-fg hover:bg-surface-2",
               )}
             >
-              {n}
+              {fmt.number(n)}
             </Link>
           </li>
         ))}
 
         <li className="px-1 text-sm font-medium text-muted tabular sm:hidden">
-          {page} / {totalPages}
+          {fmt.number(page)} / {fmt.number(totalPages)}
         </li>
 
         <li>
@@ -96,7 +102,7 @@ export function Pagination({
             <Link
               href={href(page + 1)}
               rel="next"
-              aria-label="Next page"
+              aria-label={t("pagination.nextPage")}
               className={cn(arrow, "border-line-strong text-fg hover:bg-surface-2")}
             >
               <ChevronRight className="size-4" aria-hidden="true" />

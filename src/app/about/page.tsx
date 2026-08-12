@@ -3,124 +3,97 @@ import type { Metadata } from "next";
 import { Container, PageHeader } from "@/components/layout/PageShell";
 import { Card, CardHeader } from "@/components/ui/primitives";
 import { CATEGORIES } from "@/lib/data/categories";
-import { MARKET_GROUPS } from "@/types";
 import { ARCHIVE_DAYS } from "@/lib/data/results";
-import { formatSchedule } from "@/lib/utils/format";
-import { SITE, canonical } from "@/lib/site";
+import { createFormatter } from "@/lib/utils/format";
+import { getLocale, getT } from "@/lib/i18n";
+import { localized } from "@/lib/i18n/localize";
+import { MARKET_GROUPS } from "@/types";
+import { canonical } from "@/lib/site";
 
-export const metadata: Metadata = {
-  title: "About",
-  description:
-    "What Numera publishes, where the data comes from, how the archive is organised, and what this demonstration site is not.",
-  alternates: { canonical: canonical("/about") },
-  openGraph: {
-    title: "About · Numera",
-    description: "What this site publishes and how the demo data is generated.",
-    url: canonical("/about"),
-  },
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getT();
+  return {
+    title: t("nav.about"),
+    description: t("about.metaDescription"),
+    alternates: { canonical: canonical("/about") },
+    openGraph: {
+      title: `${t("nav.about")} · ${t("meta.brand")}`,
+      description: t("about.metaDescription"),
+      url: canonical("/about"),
+    },
+  };
+}
 
-export default function AboutPage() {
+export default async function AboutPage() {
+  const t = await getT();
+  const locale = await getLocale();
+  const fmt = createFormatter(t);
+
+  const sections = [
+    { heading: t("about.whatItIs"), body: t.list("about.whatItIsBody", { days: fmt.number(ARCHIVE_DAYS) }) },
+    { heading: t("about.whatItIsNot"), body: t.list("about.whatItIsNotBody") },
+    { heading: t("about.whereData"), body: t.list("about.whereDataBody") },
+  ];
+
   return (
     <>
       <PageHeader
-        title="About Numera"
-        description={SITE.tagline}
-        breadcrumbs={[{ href: "/", label: "Home" }, { label: "About" }]}
+        title={t("about.title")}
+        description={t("meta.tagline")}
+        breadcrumbs={[{ href: "/", label: t("nav.home") }, { label: t("nav.about") }]}
       />
 
       <Container className="py-6 sm:py-8">
         <div className="grid gap-3 sm:gap-4 lg:grid-cols-3">
           <div className="space-y-3 sm:space-y-4 lg:col-span-2">
-            <Card className="p-4 sm:p-6">
-              <h2 className="text-lg font-semibold tracking-tight">What this site is</h2>
-              <div className="mt-3 space-y-3 text-sm text-muted">
-                <p>
-                  Numera is a results and statistics portal. It does one thing: publish a single
-                  numerical value for each category at a fixed daily slot, keep every value in a
-                  browsable archive, and describe that archive with plain statistics.
-                </p>
-                <p>
-                  The board on the <Link href="/results" className="text-accent hover:underline">
-                    current results
-                  </Link>{" "}
-                  page shows today. The{" "}
-                  <Link href="/history" className="text-accent hover:underline">
-                    archive
-                  </Link>{" "}
-                  holds {ARCHIVE_DAYS} days of history, filterable by category, date range and
-                  status. The{" "}
-                  <Link href="/statistics" className="text-accent hover:underline">
-                    statistics
-                  </Link>{" "}
-                  page summarises what has already been published — volumes, timings and
-                  distributions.
-                </p>
-              </div>
-            </Card>
+            {sections.map((section) => (
+              <Card key={section.heading} className="p-4 sm:p-6">
+                <h2 className="text-lg font-semibold tracking-tight text-pretty">
+                  {section.heading}
+                </h2>
+                <div className="mt-3 space-y-3 text-sm text-muted text-pretty">
+                  {section.body.map((paragraph, i) => (
+                    <p key={i}>{paragraph}</p>
+                  ))}
+                </div>
+              </Card>
+            ))}
 
-            <Card className="p-4 sm:p-6">
-              <h2 className="text-lg font-semibold tracking-tight">What this site is not</h2>
-              <div className="mt-3 space-y-3 text-sm text-muted">
-                <p>
-                  This is a demonstration build. It is not connected to any real service,
-                  operator or organisation, and the categories are invented names.
-                </p>
-                <p>
-                  There is no betting, wagering, deposit, withdrawal or payment functionality
-                  here, and none is planned. Nothing on the site is a prediction, a tip, a
-                  recommendation, or a claim about future values — the statistics pages
-                  describe past data only.
-                </p>
-              </div>
-            </Card>
-
-            <Card className="p-4 sm:p-6">
-              <h2 className="text-lg font-semibold tracking-tight">Where the data comes from</h2>
-              <div className="mt-3 space-y-3 text-sm text-muted">
-                <p>
-                  Every value is generated by a seeded pseudo-random function keyed on the
-                  category and the date. That makes the archive reproducible — the same date
-                  always yields the same value — while today&apos;s board still fills in as each
-                  scheduled slot passes.
-                </p>
-                <p>
-                  The generator sits behind a service layer, and the pages and the public API
-                  both read through that layer. Replacing the generator with a database means
-                  changing one module.
-                </p>
-                <p>
-                  Common questions are answered in the{" "}
-                  <Link href="/faqs" className="text-accent hover:underline">
-                    FAQs
-                  </Link>
-                  , and the{" "}
-                  <Link href="/disclaimer" className="text-accent hover:underline">
-                    disclaimer
-                  </Link>{" "}
-                  sets out the limits of what the statistics mean.
-                </p>
-              </div>
-            </Card>
+            <p className="text-sm text-muted text-pretty">
+              {t("about.seeAlso")}{" "}
+              <Link href="/faqs" className="text-accent hover:underline">
+                {t("nav.faqs")}
+              </Link>
+              {" · "}
+              <Link href="/disclaimer" className="text-accent hover:underline">
+                {t("nav.disclaimer")}
+              </Link>
+            </p>
           </div>
 
           <div className="space-y-3 sm:space-y-4">
             <Card>
               <CardHeader
-                title="Publication schedule"
-                description={`${CATEGORIES.length} markets across ${MARKET_GROUPS.length} groups. All times are local.`}
+                title={t("about.scheduleTitle")}
+                description={t("about.scheduleHint", {
+                  markets: fmt.number(CATEGORIES.length),
+                  groups: fmt.number(MARKET_GROUPS.length),
+                })}
               />
               <ul className="divide-y divide-line text-sm">
                 {CATEGORIES.map((category) => (
-                  <li key={category.id} className="flex min-h-11 items-baseline justify-between gap-3 px-4 py-2.5">
+                  <li
+                    key={category.id}
+                    className="flex min-h-11 items-baseline justify-between gap-3 px-4 py-2.5"
+                  >
                     <Link
                       href={`/categories/${category.slug}`}
                       className="truncate text-accent hover:underline"
                     >
-                      {category.name}
+                      {localized(category.name, locale)}
                     </Link>
                     <span className="shrink-0 tabular text-muted">
-                      {formatSchedule(category.scheduleTime)}
+                      {fmt.schedule(category.scheduleTime)}
                     </span>
                   </li>
                 ))}
@@ -128,28 +101,26 @@ export default function AboutPage() {
             </Card>
 
             <Card>
-              <CardHeader title="Status meanings" />
+              <CardHeader title={t("about.statusTitle")} />
               <dl className="space-y-3 p-4 text-sm text-pretty">
                 <div>
-                  <dt className="font-medium">Published</dt>
-                  <dd className="text-muted">A value exists and has a publication timestamp.</dd>
+                  <dt className="font-medium">{t("status.published")}</dt>
+                  <dd className="text-muted">{t("about.statusPublished")}</dd>
                 </div>
                 <div>
-                  <dt className="font-medium">Pending</dt>
-                  <dd className="text-muted">
-                    The scheduled slot has passed but no value has been published yet.
-                  </dd>
+                  <dt className="font-medium">{t("status.pending")}</dt>
+                  <dd className="text-muted">{t("about.statusPending")}</dd>
                 </div>
                 <div>
-                  <dt className="font-medium">Scheduled</dt>
-                  <dd className="text-muted">The slot is still in the future.</dd>
+                  <dt className="font-medium">{t("status.scheduled")}</dt>
+                  <dd className="text-muted">{t("about.statusScheduled")}</dd>
                 </div>
               </dl>
             </Card>
 
             <Card>
-              <CardHeader title="Public API" description="Read-only JSON, same data as the site." />
-              <ul className="space-y-1 p-4 font-mono text-xs text-muted break-anywhere">
+              <CardHeader title={t("about.apiTitle")} description={t("about.apiHint")} />
+              <ul className="space-y-1 p-4 font-mono text-xs text-muted break-anywhere" lang="en">
                 <li>GET /api/categories</li>
                 <li>GET /api/categories/[slug]</li>
                 <li>GET /api/results</li>

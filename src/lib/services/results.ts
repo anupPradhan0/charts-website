@@ -8,10 +8,15 @@ import type { ResultQuery } from "./query";
  * through here — no component or route reads the dataset directly.
  */
 
+const NAMES_BY_SLUG = new Map(
+  CATEGORIES.map((c) => [c.slug, Object.values(c.name).map((n) => n.toLowerCase())]),
+);
+
 function matchesSearch(row: ResultEntry, term: string): boolean {
   const needle = term.toLowerCase();
   return (
     row.categoryName.toLowerCase().includes(needle) ||
+    (NAMES_BY_SLUG.get(row.categorySlug) ?? []).some((n) => n.includes(needle)) ||
     row.categorySlug.includes(needle) ||
     row.date.includes(needle) ||
     (row.value ?? "").includes(needle)
@@ -104,24 +109,34 @@ export function getResultsForCategory(slug: string, limit: number): ResultEntry[
 
 export interface SearchHit {
   type: "category" | "result";
-  title: string;
-  subtitle: string;
+  /** Present for both kinds — the UI resolves the display name per locale. */
+  slug: string;
   href: string;
+  date?: string;
   value?: string | null;
+  /** Only for `type: "category"` — the UI builds the subtitle from this via
+   *  `t("searchPage.hitCategory", { slot })` rather than parsing prose. */
+  scheduleTime?: string;
+  /** Only for `type: "result"` — same reasoning, via `t("searchPage.hitStatus")`. */
+  status?: ResultEntry["status"];
 }
 
-/** Global search across category names and result rows. */
+/** Global search across category names and result rows. Titles and subtitles
+ *  are resolved by the UI from these structured fields, never shipped as
+ *  pre-formatted English prose — that would defeat localisation. */
 export function search(term: string, limit = 8): SearchHit[] {
   const needle = term.trim().toLowerCase();
   if (!needle) return [];
 
   const categories = CATEGORIES.filter(
-    (c) => c.name.toLowerCase().includes(needle) || c.slug.includes(needle),
+    (c) =>
+      Object.values(c.name).some((n) => n.toLowerCase().includes(needle)) ||
+      c.slug.includes(needle),
   ).map<SearchHit>((c) => ({
     type: "category",
-    title: c.name,
-    subtitle: `Category · publishes ${c.scheduleTime}`,
+    slug: c.slug,
     href: `/categories/${c.slug}`,
+    scheduleTime: c.scheduleTime,
   }));
 
   const results = getAllResults()
@@ -129,10 +144,11 @@ export function search(term: string, limit = 8): SearchHit[] {
     .slice(0, limit)
     .map<SearchHit>((r) => ({
       type: "result",
-      title: `${r.categoryName} — ${r.date}`,
-      subtitle: r.status === "published" ? "Published result" : `Status: ${r.status}`,
+      slug: r.categorySlug,
+      date: r.date,
       href: `/history?category=${r.categorySlug}&date=${r.date}`,
       value: r.value,
+      status: r.status,
     }));
 
   return [...categories, ...results].slice(0, limit + categories.length);

@@ -5,20 +5,23 @@ import { Container, PageHeader } from "@/components/layout/PageShell";
 import { Card, EmptyState, buttonClass } from "@/components/ui/primitives";
 import { CategoryCard } from "@/components/results/cards";
 import { getCategorySummaries } from "@/lib/services/categories";
+import { getT } from "@/lib/i18n";
 import { MARKET_GROUPS } from "@/types";
 import { canonical } from "@/lib/site";
 
-export const metadata: Metadata = {
-  title: "Categories",
-  description:
-    "Every result category, its publication schedule, its most recent value and how many entries it has in the archive.",
-  alternates: { canonical: canonical("/categories") },
-  openGraph: {
-    title: "Categories · Numera",
-    description: "Browse every result category and its publication schedule.",
-    url: canonical("/categories"),
-  },
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getT();
+  return {
+    title: t("markets.title"),
+    description: t("markets.metaDescription"),
+    alternates: { canonical: canonical("/categories") },
+    openGraph: {
+      title: `${t("markets.title")} · ${t("meta.brand")}`,
+      description: t("markets.metaDescription"),
+      url: canonical("/categories"),
+    },
+  };
+}
 
 export const dynamic = "force-dynamic";
 
@@ -27,29 +30,32 @@ export default async function CategoriesPage({
 }: {
   searchParams: Promise<{ search?: string }>;
 }) {
+  const t = await getT();
   const { search = "" } = await searchParams;
   const term = search.trim().toLowerCase();
   const all = getCategorySummaries();
+  // Match the name in any language so a Hindi or Odia term finds the market.
   const summaries = term
     ? all.filter(
         (s) =>
-          s.category.name.toLowerCase().includes(term) || s.category.slug.includes(term),
+          Object.values(s.category.name).some((n) => n.toLowerCase().includes(term)) ||
+          s.category.slug.includes(term),
       )
     : all;
 
   return (
     <>
       <PageHeader
-        title="Markets"
-        description="Every market, grouped by when it publishes. Open one for its own archive, statistics and charts."
-        breadcrumbs={[{ href: "/", label: "Home" }, { label: "Categories" }]}
+        title={t("markets.title")}
+        description={t("markets.description")}
+        breadcrumbs={[{ href: "/", label: t("nav.home") }, { label: t("markets.title") }]}
       />
 
       <Container className="py-6 sm:py-8">
         <form method="get" role="search" className="mb-5 flex max-w-md gap-2 sm:mb-6">
           <div className="relative flex-1">
             <label htmlFor="category-search" className="sr-only">
-              Filter categories by name
+              {t("markets.filterLabel")}
             </label>
             <Search
               className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-subtle"
@@ -60,17 +66,17 @@ export default async function CategoriesPage({
               type="search"
               name="search"
               defaultValue={search}
-              placeholder="Filter categories…"
+              placeholder={t("markets.filterPlaceholder")}
               className="h-11 w-full rounded-lg border border-line bg-surface pr-3 pl-9 text-base sm:h-10 sm:text-sm"
             />
           </div>
           <button type="submit" className={buttonClass("secondary")}>
-            Filter
+            {t("common.filter")}
           </button>
         </form>
 
         <p className="sr-only" role="status" aria-live="polite">
-          {summaries.length} categories shown
+          {t("markets.shown", { count: summaries.length })}
         </p>
 
         {summaries.length > 0 && !term ? (
@@ -85,12 +91,12 @@ export default async function CategoriesPage({
                       id={`markets-${group.value}`}
                       className="text-base font-semibold tracking-tight sm:text-lg"
                     >
-                      {group.label}
+                      {t(`groups.${group.value}Label`)}
                       <span className="ml-2 text-sm font-normal text-muted tabular">
                         ({inGroup.length})
                       </span>
                     </h2>
-                    <p className="mt-1 text-sm text-muted text-pretty">{group.blurb}</p>
+                    <p className="mt-1 text-sm text-muted text-pretty">{t(`groups.${group.value}Blurb`)}</p>
                   </div>
                   <ul className="grid gap-2.5 sm:grid-cols-2 sm:gap-3 lg:grid-cols-3 xl:grid-cols-4">
                     {inGroup.map((summary) => (
@@ -107,11 +113,11 @@ export default async function CategoriesPage({
           <Card>
             <EmptyState
               icon={<SearchX className="size-8" aria-hidden="true" />}
-              title={`No category matches “${search.slice(0, 40)}”`}
-              description="Check the spelling, or clear the filter to see all categories."
+              title={t("markets.noMatch", { term: search.slice(0, 40) })}
+              description={t("markets.noMatchHint")}
               action={
                 <Link href="/categories" className={buttonClass("secondary")}>
-                  Clear filter
+                  {t("markets.clearFilter")}
                 </Link>
               }
             />

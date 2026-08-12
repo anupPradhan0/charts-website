@@ -7,36 +7,33 @@ import {
   CardHeader,
   EmptyState,
   ResultValue,
-  StatusBadge,
   buttonClass,
 } from "@/components/ui/primitives";
+import { StatusBadge } from "@/components/ui/StatusBadge";
 import { ResultCard } from "@/components/results/cards";
 import { AutoRefresh } from "@/components/results/AutoRefresh";
 import { getCategorySummaries, getSummariesByGroup } from "@/lib/services/categories";
 import { getLastUpdated } from "@/lib/services/results";
-import {
-  cn,
-  formatDate,
-  formatDateTime,
-  formatRelative,
-  formatSchedule,
-  formatTime,
-} from "@/lib/utils/format";
+import { cn, createFormatter } from "@/lib/utils/format";
+import { getLocale, getT } from "@/lib/i18n";
+import { localized } from "@/lib/i18n/localize";
 import { toISODate } from "@/lib/data/results";
 import { canonical } from "@/lib/site";
 import { MARKET_GROUPS } from "@/types";
 
-export const metadata: Metadata = {
-  title: "Current Results",
-  description:
-    "Today's board: the value published by each category, the slots still to come, and when each entry was published.",
-  alternates: { canonical: canonical("/results") },
-  openGraph: {
-    title: "Current Results · Numera",
-    description: "Today's published values across every category.",
-    url: canonical("/results"),
-  },
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getT();
+  return {
+    title: t("results.title"),
+    description: t("results.metaDescription"),
+    alternates: { canonical: canonical("/results") },
+    openGraph: {
+      title: `${t("results.title")} · ${t("meta.brand")}`,
+      description: t("results.metaDescription"),
+      url: canonical("/results"),
+    },
+  };
+}
 
 export const dynamic = "force-dynamic";
 
@@ -51,6 +48,9 @@ export default async function ResultsPage({
   searchParams: Promise<{ group?: string }>;
 }) {
   const { group } = await searchParams;
+  const t = await getT();
+  const locale = await getLocale();
+  const fmt = createFormatter(t);
   const activeGroup = MARKET_GROUPS.find((g) => g.value === group)?.value;
   const grouped = getSummariesByGroup().filter((g) => !activeGroup || g.group === activeGroup);
   const summaries = getCategorySummaries().filter(
@@ -64,15 +64,15 @@ export default async function ResultsPage({
   return (
     <>
       <PageHeader
-        title="Current Results"
-        description={`Today's board for ${formatDate(today)}. Each category publishes one value at its scheduled slot.`}
-        breadcrumbs={[{ href: "/", label: "Home" }, { label: "Current Results" }]}
+        title={t("results.title")}
+        description={t("results.description", { date: fmt.date(today) })}
+        breadcrumbs={[{ href: "/", label: t("nav.home") }, { label: t("results.title") }]}
         meta={
           <>
             {lastUpdated ? (
               <UpdatedStamp
-                timestamp={formatDateTime(lastUpdated)}
-                relative={formatRelative(lastUpdated)}
+                timestamp={fmt.dateTime(lastUpdated)}
+                relative={fmt.relative(lastUpdated)}
               />
             ) : null}
             <AutoRefresh />
@@ -81,14 +81,14 @@ export default async function ResultsPage({
         actions={
           <Link href="/history" className={buttonClass("secondary")}>
             <CalendarRange className="size-4" aria-hidden="true" />
-            Historical results
+            {t("results.historicalResults")}
           </Link>
         }
       />
 
       <Container className="py-6 sm:py-8">
         {/* Group filter --------------------------------------------------- */}
-        <nav aria-label="Market groups" className="mb-5 sm:mb-6">
+        <nav aria-label={t("results.groupNav")} className="mb-5 sm:mb-6">
           <ul className="scroll-x flex gap-2 pb-1">
             <li>
               <Link
@@ -96,7 +96,7 @@ export default async function ResultsPage({
                 aria-current={!activeGroup ? "true" : undefined}
                 className={cn(chip, !activeGroup ? chipOn : chipOff)}
               >
-                All markets
+                {t("common.allMarkets")}
               </Link>
             </li>
             {MARKET_GROUPS.map((g) => (
@@ -106,7 +106,7 @@ export default async function ResultsPage({
                   aria-current={activeGroup === g.value ? "true" : undefined}
                   className={cn(chip, activeGroup === g.value ? chipOn : chipOff)}
                 >
-                  {g.label}
+                  {t(`groups.${g.value}Label`)}
                 </Link>
               </li>
             ))}
@@ -114,7 +114,6 @@ export default async function ResultsPage({
         </nav>
 
         {grouped.map(({ group: groupName, summaries: groupSummaries }) => {
-          const meta = MARKET_GROUPS.find((g) => g.value === groupName)!;
           const published = groupSummaries.filter((s) => s.today?.status === "published");
           return (
             <section
@@ -127,17 +126,20 @@ export default async function ResultsPage({
                   id={`group-${groupName}`}
                   className="text-base font-semibold tracking-tight sm:text-lg"
                 >
-                  {meta.label}
+                  {t(`groups.${groupName}Label`)}
                   <span className="ml-2 text-sm font-normal text-muted tabular">
-                    ({published.length}/{groupSummaries.length} published)
+                    {t("results.publishedOfTotal", {
+                      published: fmt.number(published.length),
+                      total: fmt.number(groupSummaries.length),
+                    })}
                   </span>
                 </h2>
-                <p className="mt-1 text-sm text-muted text-pretty">{meta.blurb}</p>
+                <p className="mt-1 text-sm text-muted text-pretty">{t(`groups.${groupName}Blurb`)}</p>
               </div>
 
               {groupSummaries.length === 0 ? (
                 <Card>
-                  <EmptyState title="No markets in this group" />
+                  <EmptyState title={t("results.noMarketsInGroup")} />
                 </Card>
               ) : (
                 <ul className="grid gap-2.5 min-[380px]:grid-cols-2 sm:gap-3 lg:grid-cols-4">
@@ -158,12 +160,12 @@ export default async function ResultsPage({
         <section aria-labelledby="schedule-today">
           <Card>
             <CardHeader
-              title={<span id="schedule-today">Today&apos;s schedule</span>}
-              description="Every category in slot order, including those still to publish."
+              title={<span id="schedule-today">{t("results.scheduleTitle")}</span>}
+              description={t("results.scheduleDescription")}
             />
 
             {summaries.length === 0 ? (
-              <EmptyState title="No categories are configured" />
+              <EmptyState title={t("results.noMarketsConfigured")} />
             ) : (
               <>
                 {/* Five columns need real width; below md the same rows are
@@ -171,24 +173,24 @@ export default async function ResultsPage({
                 <div className="scroll-x hidden md:block">
                 <table className="w-full min-w-[34rem] border-collapse text-sm">
                   <caption className="sr-only">
-                    Publication schedule and status for {formatDate(today)}
+                    {t("results.scheduleCaption", { date: fmt.date(today) })}
                   </caption>
                   <thead className="border-b border-line bg-surface-2 text-xs text-muted uppercase">
                     <tr>
                       <th scope="col" className="px-4 py-2.5 text-left font-medium">
-                        Category
+                        {t("table.market")}
                       </th>
                       <th scope="col" className="px-4 py-2.5 text-left font-medium">
-                        Slot
+                        {t("table.slot")}
                       </th>
                       <th scope="col" className="px-4 py-2.5 text-center font-medium">
-                        Result
+                        {t("table.result")}
                       </th>
                       <th scope="col" className="px-4 py-2.5 text-left font-medium">
-                        Status
+                        {t("table.status")}
                       </th>
                       <th scope="col" className="px-4 py-2.5 text-right font-medium">
-                        Published
+                        {t("table.published")}
                       </th>
                     </tr>
                   </thead>
@@ -200,27 +202,27 @@ export default async function ResultsPage({
                             href={`/categories/${category.slug}`}
                             className="text-accent hover:underline"
                           >
-                            {category.name}
+                            {localized(category.name, locale)}
                           </Link>
                           {category.status === "paused" ? (
-                            <span className="ml-2 text-xs font-normal text-muted">paused</span>
+                            <span className="ml-2 text-xs font-normal text-muted">{t("common.paused")}</span>
                           ) : null}
                         </th>
                         <td className="px-4 py-3 tabular text-muted">
-                          {formatSchedule(category.scheduleTime)}
+                          {fmt.schedule(category.scheduleTime)}
                         </td>
                         <td className="px-4 py-3 text-center">
-                          <ResultValue value={entry?.value ?? null} size="sm" />
+                          <ResultValue value={entry?.value ?? null} size="sm" t={t} />
                         </td>
                         <td className="px-4 py-3">
                           {entry ? (
                             <StatusBadge status={entry.status} />
                           ) : (
-                            <span className="text-xs text-muted">No entry today</span>
+                            <span className="text-xs text-muted">{t("common.noEntryToday")}</span>
                           )}
                         </td>
                         <td className="px-4 py-3 text-right tabular text-muted">
-                          {formatTime(entry?.publishedAt ?? null)}
+                          {fmt.time(entry?.publishedAt ?? null)}
                         </td>
                       </tr>
                     ))}
@@ -237,22 +239,24 @@ export default async function ResultsPage({
                             href={`/categories/${category.slug}`}
                             className="text-accent hover:underline"
                           >
-                            {category.name}
+                            {localized(category.name, locale)}
                           </Link>
                         </p>
                         <p className="text-xs text-muted tabular">
-                          Slot {formatSchedule(category.scheduleTime)}
-                          {entry?.publishedAt ? ` · published ${formatTime(entry.publishedAt)}` : ""}
+                          {t("common.slot")} {fmt.schedule(category.scheduleTime)}
+                          {entry?.publishedAt
+                            ? ` · ${t("common.publishedAt", { time: fmt.time(entry.publishedAt) })}`
+                            : ""}
                         </p>
                         <p className="mt-1.5">
                           {entry ? (
                             <StatusBadge status={entry.status} />
                           ) : (
-                            <span className="text-xs text-muted">No entry today</span>
+                            <span className="text-xs text-muted">{t("common.noEntryToday")}</span>
                           )}
                         </p>
                       </div>
-                      <ResultValue value={entry?.value ?? null} />
+                      <ResultValue value={entry?.value ?? null} t={t} />
                     </li>
                   ))}
                 </ul>
@@ -262,8 +266,7 @@ export default async function ResultsPage({
 
           {upcoming.length > 0 ? (
             <p className="mt-3 text-sm text-muted">
-              {upcoming.length} {upcoming.length === 1 ? "category is" : "categories are"} still
-              to publish today.
+{t.plural("results.stillToPublish", upcoming.length, { count: fmt.number(upcoming.length) })}
             </p>
           ) : null}
         </section>

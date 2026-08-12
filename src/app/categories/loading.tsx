@@ -9,7 +9,7 @@ import {
 export default function CategoriesLoading() {
   return (
     <>
-      <LoadingAnnouncement label="Loading categories" />
+      <LoadingAnnouncement labelKey="loading.markets" />
       <PageHeaderSkeleton withMeta={false} />
       <Container className="py-6 sm:py-8">
         <Skeleton className="mb-5 h-11 w-full max-w-md sm:mb-6" />

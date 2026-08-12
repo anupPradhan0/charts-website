@@ -1,8 +1,12 @@
 import Link from "next/link";
 import { ArrowDown, ArrowUp, ChevronsUpDown, SearchX } from "lucide-react";
-import { EmptyState, ResultValue, StatusBadge } from "@/components/ui/primitives";
+import { EmptyState, ResultValue } from "@/components/ui/primitives";
+import { StatusBadge } from "@/components/ui/StatusBadge";
 import { buildQuery } from "@/lib/services/query";
-import { cn, formatDate, formatTime, formatWeekday } from "@/lib/utils/format";
+import { cn, createFormatter, type Formatter } from "@/lib/utils/format";
+import { getLocale, getT } from "@/lib/i18n";
+import { categoryName } from "@/lib/i18n/localize";
+import type { Translator } from "@/lib/i18n/core";
 import type { ResultEntry } from "@/types";
 import type { ResultQuery } from "@/lib/services/query";
 
@@ -22,6 +26,7 @@ import type { ResultQuery } from "@/lib/services/query";
 type SortValue = ResultQuery["sort"];
 
 function SortableHeader({
+  t,
   label,
   asc,
   desc,
@@ -30,6 +35,7 @@ function SortableHeader({
   query,
   className,
 }: {
+  t: Translator;
   label: string;
   asc: SortValue;
   desc: SortValue;
@@ -59,8 +65,8 @@ function SortableHeader({
           aria-hidden="true"
         />
         <span className="sr-only">
-          {isDesc ? "sorted descending, " : isAsc ? "sorted ascending, " : ""}
-          sort {next === asc ? "ascending" : "descending"}
+          {isDesc ? t("table.sortedDescending") : isAsc ? t("table.sortedAscending") : ""}{" "}
+          {next === asc ? t("table.sortAscending") : t("table.sortDescending")}
         </span>
       </Link>
     </th>
@@ -70,20 +76,22 @@ function SortableHeader({
 /** Mobile sort control: the desktop column headers are gone, so sorting needs
  *  its own affordance. Plain links, same URLs the headers use. */
 function MobileSortBar({
+  t,
   sort,
   basePath,
   query,
 }: {
+  t: Translator;
   sort: SortValue;
   basePath: string;
   query: Record<string, unknown>;
 }) {
   const options: { value: SortValue; label: string }[] = [
-    { value: "date_desc", label: "Newest" },
-    { value: "date_asc", label: "Oldest" },
-    { value: "value_desc", label: "Value ↓" },
-    { value: "value_asc", label: "Value ↑" },
-    { value: "category_asc", label: "A–Z" },
+    { value: "date_desc", label: t("sort.chipNewest") },
+    { value: "date_asc", label: t("sort.chipOldest") },
+    { value: "value_desc", label: t("sort.chipValueHigh") },
+    { value: "value_asc", label: t("sort.chipValueLow") },
+    { value: "category_asc", label: t("sort.chipAZ") },
   ];
 
   return (
@@ -110,15 +118,15 @@ function MobileSortBar({
   );
 }
 
-export function ResultsTable({
+export async function ResultsTable({
   rows,
   basePath,
   query,
   sort,
   showCategory = true,
-  caption = "Historical results",
-  emptyTitle = "No results match these filters",
-  emptyDescription = "Try widening the date range, choosing a different category, or clearing the search term.",
+  caption,
+  emptyTitle,
+  emptyDescription,
   emptyAction,
 }: {
   rows: ResultEntry[];
@@ -131,12 +139,16 @@ export function ResultsTable({
   emptyDescription?: string;
   emptyAction?: React.ReactNode;
 }) {
+  const t = await getT();
+  const locale = await getLocale();
+  const fmt: Formatter = createFormatter(t);
+
   if (rows.length === 0) {
     return (
       <EmptyState
         icon={<SearchX className="size-8" aria-hidden="true" />}
-        title={emptyTitle}
-        description={emptyDescription}
+        title={emptyTitle ?? t("history.emptyTitle")}
+        description={emptyDescription ?? t("history.emptyHint")}
         action={emptyAction}
       />
     );
@@ -144,16 +156,17 @@ export function ResultsTable({
 
   return (
     <>
-      <MobileSortBar sort={sort} basePath={basePath} query={query} />
+      <MobileSortBar t={t} sort={sort} basePath={basePath} query={query} />
 
       {/* Desktop / tablet */}
       <div className="scroll-x hidden md:block">
         <table className="w-full min-w-[38rem] border-collapse text-sm">
-          <caption className="sr-only">{caption}</caption>
+          <caption className="sr-only">{caption ?? t("history.caption")}</caption>
           <thead className="border-b border-line bg-surface-2 text-xs text-muted uppercase">
             <tr>
               <SortableHeader
-                label="Date"
+                t={t}
+                label={t("table.date")}
                 asc="date_asc"
                 desc="date_desc"
                 sort={sort}
@@ -162,7 +175,8 @@ export function ResultsTable({
               />
               {showCategory ? (
                 <SortableHeader
-                  label="Category"
+                    t={t}
+                  label={t("table.market")}
                   asc="category_asc"
                   desc="category_asc"
                   sort={sort}
@@ -171,7 +185,8 @@ export function ResultsTable({
                 />
               ) : null}
               <SortableHeader
-                label="Result"
+                t={t}
+                label={t("table.result")}
                 asc="value_asc"
                 desc="value_desc"
                 sort={sort}
@@ -180,10 +195,10 @@ export function ResultsTable({
                 className="text-center"
               />
               <th scope="col" className="px-4 py-2.5 text-left font-medium">
-                Status
+                {t("table.status")}
               </th>
               <th scope="col" className="px-4 py-2.5 text-right font-medium">
-                Published
+                {t("table.published")}
               </th>
             </tr>
           </thead>
@@ -191,9 +206,9 @@ export function ResultsTable({
             {rows.map((row) => (
               <tr key={row.id} className="border-b border-line last:border-0 hover:bg-surface-2">
                 <th scope="row" className="px-4 py-3 text-left font-medium whitespace-nowrap">
-                  <span className="tabular">{formatDate(row.date)}</span>
+                  <span className="tabular">{fmt.date(row.date)}</span>
                   <span className="block text-xs font-normal text-muted">
-                    {formatWeekday(row.date)}
+                    {fmt.weekday(row.date)}
                   </span>
                 </th>
                 {showCategory ? (
@@ -202,7 +217,7 @@ export function ResultsTable({
                       href={`/categories/${row.categorySlug}`}
                       className="font-medium text-accent hover:underline"
                     >
-                      {row.categoryName}
+                      {categoryName(row.categorySlug, locale)}
                     </Link>
                   </td>
                 ) : null}
@@ -213,7 +228,7 @@ export function ResultsTable({
                   <StatusBadge status={row.status} />
                 </td>
                 <td className="px-4 py-3 text-right whitespace-nowrap tabular text-muted">
-                  {formatTime(row.publishedAt)}
+                  {fmt.time(row.publishedAt)}
                 </td>
               </tr>
             ))}
@@ -227,9 +242,9 @@ export function ResultsTable({
           <li key={row.id} className="flex items-center gap-3 px-3 py-2.5">
             <div className="min-w-0 flex-1">
               <p className="text-sm font-medium tabular">
-                {formatDate(row.date)}
+                {fmt.date(row.date)}
                 <span className="ml-1.5 text-xs font-normal text-subtle">
-                  {formatWeekday(row.date).slice(0, 3)}
+                  {fmt.weekdayShort(row.date)}
                 </span>
               </p>
               {showCategory ? (
@@ -238,14 +253,14 @@ export function ResultsTable({
                     href={`/categories/${row.categorySlug}`}
                     className="-mx-1 inline-flex min-h-8 items-center px-1 text-accent"
                   >
-                    {row.categoryName}
+                    {categoryName(row.categorySlug, locale)}
                   </Link>
                 </p>
               ) : null}
               <p className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-1">
                 <StatusBadge status={row.status} />
                 {row.publishedAt ? (
-                  <span className="text-xs text-muted tabular">{formatTime(row.publishedAt)}</span>
+                  <span className="text-xs text-muted tabular">{fmt.time(row.publishedAt)}</span>
                 ) : null}
               </p>
             </div>

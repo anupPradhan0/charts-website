@@ -1,4 +1,10 @@
+import type { Locale } from "@/lib/i18n/config";
+
 /** Domain types shared by the data layer, services, API routes and UI. */
+
+/** A string that exists in every locale. Stored once on the record, resolved
+ *  at the boundary — the data is never duplicated per language. */
+export type LocalizedText = Record<Locale, string>;
 
 export type CategoryStatus = "active" | "paused";
 
@@ -23,8 +29,8 @@ export type ResultStatus = "published" | "pending" | "scheduled";
 export interface Category {
   id: string;
   slug: string;
-  name: string;
-  description: string;
+  name: LocalizedText;
+  description: LocalizedText;
   /** 24h "HH:MM" — the daily slot at which this category publishes. */
   scheduleTime: string;
   group: MarketGroup;

@@ -5,34 +5,36 @@
  * whole tree, because a phone has the vertical room to show sub-sections and
  * no room for hover menus.
  */
+import type { TranslationKey } from "@/lib/i18n/core";
+
 export interface NavItem {
   href: string;
-  label: string;
-  children?: { href: string; label: string }[];
+  labelKey: TranslationKey;
+  children?: { href: string; labelKey: TranslationKey }[];
 }
 
 export const NAV_ITEMS: NavItem[] = [
-  { href: "/", label: "Dashboard" },
+  { href: "/", labelKey: "nav.dashboard" },
   {
     href: "/results",
-    label: "Live Results",
+    labelKey: "nav.liveResults",
     children: [
-      { href: "/results?group=day", label: "Day Markets" },
-      { href: "/results?group=night", label: "Night Markets" },
-      { href: "/results?group=special", label: "Special Markets" },
+      { href: "/results?group=day", labelKey: "nav.dayMarkets" },
+      { href: "/results?group=night", labelKey: "nav.nightMarkets" },
+      { href: "/results?group=special", labelKey: "nav.specialMarkets" },
     ],
   },
-  { href: "/categories", label: "Markets" },
-  { href: "/charts", label: "Charts" },
-  { href: "/history", label: "Historical" },
-  { href: "/statistics", label: "Statistics" },
+  { href: "/categories", labelKey: "nav.markets" },
+  { href: "/charts", labelKey: "nav.charts" },
+  { href: "/history", labelKey: "nav.historical" },
+  { href: "/statistics", labelKey: "nav.statistics" },
   {
     href: "/about",
-    label: "Information",
+    labelKey: "nav.information",
     children: [
-      { href: "/about", label: "About" },
-      { href: "/faqs", label: "FAQs" },
-      { href: "/disclaimer", label: "Disclaimer" },
+      { href: "/about", labelKey: "nav.about" },
+      { href: "/faqs", labelKey: "nav.faqs" },
+      { href: "/disclaimer", labelKey: "nav.disclaimer" },
     ],
   },
 ];

@@ -6,20 +6,24 @@ import { SimpleBarChart, TrendChart } from "@/components/charts/Charts";
 import { listCategories } from "@/lib/services/categories";
 import { getStatistics } from "@/lib/services/statistics";
 import { parsePageQuery, statisticsQuerySchema } from "@/lib/services/query";
-import { formatDate, formatDateTime, formatRelative } from "@/lib/utils/format";
+import { createFormatter } from "@/lib/utils/format";
+import { getLocale, getT } from "@/lib/i18n";
+import { localized } from "@/lib/i18n/localize";
 import { canonical } from "@/lib/site";
 
-export const metadata: Metadata = {
-  title: "Statistics",
-  description:
-    "Descriptive statistics over the published archive: publication activity over time, category volumes, value distribution, publication timing and weekday coverage.",
-  alternates: { canonical: canonical("/statistics") },
-  openGraph: {
-    title: "Statistics · Numera",
-    description: "Charts and summaries describing the published result archive.",
-    url: canonical("/statistics"),
-  },
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getT();
+  return {
+    title: t("statistics.title"),
+    description: t("statistics.metaDescription"),
+    alternates: { canonical: canonical("/statistics") },
+    openGraph: {
+      title: `${t("statistics.title")} · ${t("meta.brand")}`,
+      description: t("statistics.metaDescription"),
+      url: canonical("/statistics"),
+    },
+  };
+}
 
 export const dynamic = "force-dynamic";
 
@@ -30,9 +34,12 @@ export default async function StatisticsPage({
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
+  const t = await getT();
+  const locale = await getLocale();
+  const fmt = createFormatter(t);
   const raw = await searchParams;
   const query = parsePageQuery(statisticsQuerySchema, raw);
-  const stats = getStatistics(query);
+  const stats = getStatistics(query, locale);
   const categories = listCategories();
   const selected = categories.find((c) => c.slug === query.category);
 
@@ -45,14 +52,14 @@ export default async function StatisticsPage({
   return (
     <>
       <PageHeader
-        title="Statistics"
-        description="Summaries of what has already been published: how much, how often, and when. These are descriptions of past data only."
-        breadcrumbs={[{ href: "/", label: "Home" }, { label: "Statistics" }]}
+        title={t("statistics.title")}
+        description={t("statistics.description")}
+        breadcrumbs={[{ href: "/", label: t("nav.home") }, { label: t("statistics.title") }]}
         meta={
           stats.summary.lastUpdated ? (
             <UpdatedStamp
-              timestamp={formatDateTime(stats.summary.lastUpdated)}
-              relative={formatRelative(stats.summary.lastUpdated)}
+              timestamp={fmt.dateTime(stats.summary.lastUpdated)}
+              relative={fmt.relative(stats.summary.lastUpdated)}
             />
           ) : null
         }
@@ -66,7 +73,7 @@ export default async function StatisticsPage({
         >
           <div>
             <label htmlFor="stats-category" className="mb-1 block text-xs font-medium text-muted">
-              Category
+              {t("statistics.market")}
             </label>
             <select
               id="stats-category"
@@ -74,10 +81,10 @@ export default async function StatisticsPage({
               defaultValue={query.category ?? ""}
               className="h-11 w-full rounded-lg border border-line bg-surface px-3 text-base sm:h-10 sm:w-56 sm:text-sm"
             >
-              <option value="">All categories</option>
+              <option value="">{t("statistics.allMarkets")}</option>
               {categories.map((c) => (
                 <option key={c.slug} value={c.slug}>
-                  {c.name}
+                  {localized(c.name, locale)}
                 </option>
               ))}
             </select>
@@ -85,7 +92,7 @@ export default async function StatisticsPage({
 
           <div>
             <label htmlFor="stats-days" className="mb-1 block text-xs font-medium text-muted">
-              Time window
+              {t("statistics.timeWindow")}
             </label>
             <select
               id="stats-days"
@@ -95,7 +102,7 @@ export default async function StatisticsPage({
             >
               {DAY_OPTIONS.map((d) => (
                 <option key={d} value={d}>
-                  Last {d} days
+                  {t("statistics.lastDays", { count: fmt.number(d) })}
                 </option>
               ))}
             </select>
@@ -103,46 +110,48 @@ export default async function StatisticsPage({
 
           <div className="flex gap-2">
             <button type="submit" className={buttonClass("primary", "flex-1 sm:flex-none")}>
-              Apply
+              {t("common.apply")}
             </button>
             {query.category || query.days !== 30 ? (
               <Link href="/statistics" className={buttonClass("ghost", "flex-1 sm:flex-none")}>
-                Reset
+                {t("common.reset")}
               </Link>
             ) : null}
           </div>
         </form>
 
         <p className="mb-5 text-sm text-muted text-pretty sm:mb-6">
-          Showing{" "}
-          <span className="font-medium text-fg">
-            {selected ? selected.name : "all categories"}
-          </span>{" "}
-          over the last {query.days} days · archive covers{" "}
-          {formatDate(stats.summary.coverageStart)} – {formatDate(stats.summary.coverageEnd)}.
+          {t("statistics.showingScope", {
+            scope: selected ? localized(selected.name, locale) : t("statistics.allMarkets"),
+            days: fmt.number(query.days),
+            start: fmt.date(stats.summary.coverageStart),
+            end: fmt.date(stats.summary.coverageEnd),
+          })}
         </p>
 
         {/* Summary --------------------------------------------------------- */}
         <div className="mb-6 grid grid-cols-2 gap-2.5 sm:gap-3 sm:mb-8 lg:grid-cols-4">
           <StatTile
-            label="Published entries"
-            value={stats.summary.publishedResults.toLocaleString("en-GB")}
-            hint="In the selected scope"
+            label={t("statistics.publishedEntries")}
+            value={fmt.number(stats.summary.publishedResults)}
+            hint={t("statistics.inSelectedScope")}
           />
           <StatTile
-            label={`Published (${query.days}d)`}
-            value={publishedInWindow.toLocaleString("en-GB")}
-            hint={`${(publishedInWindow / query.days).toFixed(1)} per day on average`}
+            label={t("statistics.publishedInWindow", { days: fmt.number(query.days) })}
+            value={fmt.number(publishedInWindow)}
+            hint={t("statistics.perDayAverage", {
+              value: fmt.number(Math.round((publishedInWindow / query.days) * 10) / 10),
+            })}
           />
           <StatTile
-            label="Published today"
-            value={stats.summary.publishedToday}
-            hint={`${stats.summary.activeCategories} categories active`}
+            label={t("statistics.publishedToday")}
+            value={fmt.number(stats.summary.publishedToday)}
+            hint={t("statistics.marketsActive", { count: fmt.number(stats.summary.activeCategories) })}
           />
           <StatTile
-            label="Busiest weekday"
+            label={t("statistics.busiestWeekday")}
             value={busiestDay?.day ?? "—"}
-            hint={`${busiestDay?.count.toLocaleString("en-GB") ?? 0} entries`}
+            hint={t("statistics.entriesCount", { count: fmt.number(busiestDay?.count ?? 0) })}
           />
         </div>
 
@@ -150,14 +159,14 @@ export default async function StatisticsPage({
         <div className="grid gap-3 sm:gap-4 lg:grid-cols-2">
           <Card className="lg:col-span-2">
             <CardHeader
-              title="Publication activity over time"
-              description={`Entries published per day for the last ${query.days} days. The dashed line shows entries that exist but are not published.`}
+              title={t("statistics.activityOverTime")}
+              description={t("statistics.activityOverTimeHint", { days: fmt.number(query.days) })}
               as="h2"
             />
             <div className="p-2 sm:p-4">
               <TrendChart
                 data={stats.resultsOverTime}
-                caption={`Entries published per day over the last ${query.days} days`}
+                caption={t("statistics.activityCaption", { days: fmt.number(query.days) })}
                 height={300}
               />
             </div>
@@ -165,8 +174,8 @@ export default async function StatisticsPage({
 
           <Card>
             <CardHeader
-              title="Category activity"
-              description="Published entries per category across the whole archive."
+              title={t("statistics.marketActivity")}
+              description={t("statistics.marketActivityHint")}
               as="h2"
             />
             <div className="p-2 sm:p-4">
@@ -177,16 +186,16 @@ export default async function StatisticsPage({
                 vertical
                 colorByAccent
                 height={Math.max(200, stats.categoryActivity.length * 34)}
-                caption="Published entries per category"
-                columns={["Category", "Published entries"]}
+                caption={t("statistics.marketActivityCaption")}
+                columns={[t("statistics.colMarket"), t("statistics.colPublishedEntries")]}
               />
             </div>
           </Card>
 
           <Card>
             <CardHeader
-              title="Historical distribution"
-              description="How published values fall across the 00–99 range. A description of past values, not an indicator of future ones."
+              title={t("statistics.distribution")}
+              description={t("statistics.distributionHint")}
               as="h2"
             />
             <div className="p-2 sm:p-4">
@@ -195,16 +204,16 @@ export default async function StatisticsPage({
                 labelKey="bucket"
                 valueKey="count"
                 color="var(--chart-2)"
-                caption="Published values grouped into ranges of ten"
-                columns={["Range", "Entries"]}
+                caption={t("statistics.distributionCaption")}
+                columns={[t("statistics.colRange"), t("statistics.colEntries")]}
               />
             </div>
           </Card>
 
           <Card>
             <CardHeader
-              title="Update frequency"
-              description="When entries are published, grouped by hour of day."
+              title={t("statistics.updateFrequency")}
+              description={t("statistics.updateFrequencyHint")}
               as="h2"
             />
             <div className="p-2 sm:p-4">
@@ -213,16 +222,16 @@ export default async function StatisticsPage({
                 labelKey="hour"
                 valueKey="count"
                 color="var(--chart-4)"
-                caption="Entries published by hour of day"
-                columns={["Hour", "Entries"]}
+                caption={t("statistics.updateFrequencyCaption")}
+                columns={[t("statistics.colHour"), t("statistics.colEntries")]}
               />
             </div>
           </Card>
 
           <Card>
             <CardHeader
-              title="Weekday coverage"
-              description="Published entries by day of the week."
+              title={t("statistics.weekdayCoverage")}
+              description={t("statistics.weekdayCoverageHint")}
               as="h2"
             />
             <div className="p-2 sm:p-4">
@@ -232,16 +241,15 @@ export default async function StatisticsPage({
                 tableLabelKey="day"
                 valueKey="count"
                 color="var(--chart-5)"
-                caption="Published entries by day of the week"
-                columns={["Day", "Entries"]}
+                caption={t("statistics.weekdayCoverageCaption")}
+                columns={[t("statistics.colDay"), t("statistics.colEntries")]}
               />
             </div>
           </Card>
         </div>
 
         <p className="mt-5 rounded-card border border-line bg-surface-2 p-3 text-sm text-muted text-pretty sm:mt-6 sm:p-4">
-          These charts summarise data that has already been published. They are not forecasts and
-          are not intended to inform any decision about future values.
+          {t("statistics.footnote")}
         </p>
       </Container>
     </>

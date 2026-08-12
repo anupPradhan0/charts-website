@@ -9,9 +9,9 @@ import {
   CardHeader,
   ResultValue,
   StatTile,
-  StatusBadge,
   buttonClass,
 } from "@/components/ui/primitives";
+import { StatusBadge } from "@/components/ui/StatusBadge";
 import { FilterPanel } from "@/components/filters/FilterPanel";
 import { ResultsTable } from "@/components/tables/ResultsTable";
 import { Pagination } from "@/components/ui/Pagination";
@@ -22,13 +22,9 @@ import { listResults } from "@/lib/services/results";
 import { getStatistics } from "@/lib/services/statistics";
 import { parsePageQuery, resultQuerySchema } from "@/lib/services/query";
 import { getArchiveRange } from "@/lib/data/results";
-import {
-  formatDate,
-  formatDateTime,
-  formatRelative,
-  formatSchedule,
-  pluralize,
-} from "@/lib/utils/format";
+import { createFormatter } from "@/lib/utils/format";
+import { getLocale, getT } from "@/lib/i18n";
+import { localized } from "@/lib/i18n/localize";
 import { canonical } from "@/lib/site";
 
 /**
@@ -52,16 +48,24 @@ export async function generateMetadata({
   params: Promise<{ slug: string }>;
 }): Promise<Metadata> {
   const { slug } = await params;
+  const t = await getT();
+  const locale = await getLocale();
+  const fmt = createFormatter(t);
   const category = getCategory(slug);
-  if (!category) return { title: "Category not found" };
+  if (!category) return { title: t("market.notFound") };
 
-  const description = `${category.name} publishes at ${formatSchedule(category.scheduleTime)} (${category.updateFrequency}). Current value, full archive and statistics.`;
+  const name = localized(category.name, locale);
+  const description = t("market.metaDescription", {
+    market: name,
+    slot: fmt.schedule(category.scheduleTime),
+    frequency: category.updateFrequency,
+  });
   return {
-    title: category.name,
+    title: name,
     description,
     alternates: { canonical: canonical(`/categories/${slug}`) },
     openGraph: {
-      title: `${category.name} · Numera`,
+      title: `${name} · ${t("meta.brand")}`,
       description,
       url: canonical(`/categories/${slug}`),
       type: "article",
@@ -81,11 +85,15 @@ export default async function CategoryDetailPage({
   if (!summary) notFound();
 
   const { category, latest, today, publishedCount } = summary;
+  const t = await getT();
+  const locale = await getLocale();
+  const fmt = createFormatter(t);
+  const name = localized(category.name, locale);
   const raw = await searchParams;
   // The category is fixed by the route; a `category` query param cannot escape it.
   const query = { ...parsePageQuery(resultQuerySchema, raw), category: slug };
   const page = listResults(query);
-  const stats = getStatistics({ category: slug, days: 30 });
+  const stats = getStatistics({ category: slug, days: 30 }, locale);
   const range = getArchiveRange();
   const basePath = `/categories/${slug}`;
 
@@ -94,21 +102,21 @@ export default async function CategoryDetailPage({
   return (
     <>
       <PageHeader
-        title={category.name}
-        description={category.description}
+        title={name}
+        description={localized(category.description, locale)}
         breadcrumbs={[
-          { href: "/", label: "Home" },
-          { href: "/categories", label: "Categories" },
-          { label: category.name },
+          { href: "/", label: t("nav.home") },
+          { href: "/categories", label: t("markets.title") },
+          { label: name },
         ]}
         meta={
           <>
             <Badge tone={category.status === "active" ? "ok" : "neutral"}>
-              {category.status === "active" ? "Active" : "Paused"}
+              {category.status === "active" ? t("common.active") : t("common.paused")}
             </Badge>
             <p className="flex items-center gap-1.5 text-xs text-muted">
               <CalendarClock className="size-3.5" aria-hidden="true" />
-              Slot {formatSchedule(category.scheduleTime)}
+              {t("common.slot")} {fmt.schedule(category.scheduleTime)}
             </p>
             <p className="flex items-center gap-1.5 text-xs text-muted">
               <Repeat className="size-3.5" aria-hidden="true" />
@@ -116,8 +124,8 @@ export default async function CategoryDetailPage({
             </p>
             {latest?.publishedAt ? (
               <UpdatedStamp
-                timestamp={formatDateTime(latest.publishedAt)}
-                relative={formatRelative(latest.publishedAt)}
+                timestamp={fmt.dateTime(latest.publishedAt)}
+                relative={fmt.relative(latest.publishedAt)}
               />
             ) : null}
           </>
@@ -128,7 +136,7 @@ export default async function CategoryDetailPage({
             className={buttonClass("secondary")}
           >
             <CalendarRange className="size-4" aria-hidden="true" />
-            In full archive
+            {t("market.inFullArchive")}
           </Link>
         }
       />
@@ -138,46 +146,46 @@ export default async function CategoryDetailPage({
         <div className="mb-6 grid gap-3 sm:gap-4 sm:mb-8 lg:grid-cols-3">
           <Card className="flex flex-col items-center justify-center p-4 text-center sm:p-6">
             <p className="text-xs font-medium text-muted">
-              {today ? "Today's result" : "Most recent result"}
+              {today ? t("market.todaysResult") : t("market.mostRecentResult")}
             </p>
             <div className="my-3">
-              <ResultValue value={current?.value ?? null} size="lg" />
+              <ResultValue value={current?.value ?? null} size="lg" t={t} />
             </div>
             {current ? (
               <>
                 <StatusBadge status={current.status} />
-                <p className="mt-2 text-sm text-muted tabular">{formatDate(current.date)}</p>
+                <p className="mt-2 text-sm text-muted tabular">{fmt.date(current.date)}</p>
               </>
             ) : (
-              <p className="mt-2 text-sm text-muted">No entries yet</p>
+              <p className="mt-2 text-sm text-muted">{t("market.noEntriesYet")}</p>
             )}
           </Card>
 
           <div className="grid grid-cols-2 gap-2.5 sm:gap-3 lg:col-span-2">
             <StatTile
-              label="Archived entries"
-              value={publishedCount.toLocaleString("en-GB")}
-              hint={`${formatDate(range.start)} – ${formatDate(range.end)}`}
+              label={t("market.archivedEntries")}
+              value={fmt.number(publishedCount)}
+              hint={`${fmt.date(range.start)} – ${fmt.date(range.end)}`}
             />
             <StatTile
-              label="Published (30 days)"
-              value={stats.resultsOverTime.reduce((sum, d) => sum + d.published, 0)}
-              hint={`out of ${stats.resultsOverTime.length} days`}
+              label={t("market.publishedThirtyDays")}
+              value={fmt.number(stats.resultsOverTime.reduce((sum, d) => sum + d.published, 0))}
+              hint={t("market.outOfDays", { count: fmt.number(stats.resultsOverTime.length) })}
             />
             <StatTile
-              label="Scheduled slot"
-              value={formatSchedule(category.scheduleTime)}
+              label={t("market.scheduledSlot")}
+              value={fmt.schedule(category.scheduleTime)}
               hint={category.updateFrequency}
             />
             <StatTile
-              label="Most common range"
+              label={t("market.mostCommonRange")}
               value={
                 stats.distribution.reduce(
                   (best, d) => (d.count > best.count ? d : best),
                   stats.distribution[0],
                 ).bucket
               }
-              hint="Across all archived values"
+              hint={t("market.acrossArchive")}
             />
           </div>
         </div>
@@ -186,22 +194,22 @@ export default async function CategoryDetailPage({
         <div className="mb-6 grid gap-3 sm:gap-4 sm:mb-8 lg:grid-cols-2">
           <Card>
             <CardHeader
-              title="Publication activity"
-              description="Entries published per day over the last 30 days."
+              title={t("market.publicationActivity")}
+              description={t("market.publicationActivityHint")}
               as="h3"
             />
             <div className="p-2 sm:p-4">
               <TrendChart
                 data={stats.resultsOverTime}
-                caption={`${category.name}: entries published per day over the last 30 days`}
+                caption={t("statistics.activityCaption", { days: 30 })}
               />
             </div>
           </Card>
 
           <Card>
             <CardHeader
-              title="Historical distribution"
-              description="How archived values fall across the 00–99 range."
+              title={t("market.historicalDistribution")}
+              description={t("market.historicalDistributionHint")}
               as="h3"
             />
             <div className="p-2 sm:p-4">
@@ -210,8 +218,8 @@ export default async function CategoryDetailPage({
                 labelKey="bucket"
                 valueKey="count"
                 color="var(--chart-2)"
-                caption={`${category.name}: archived values grouped into ranges of ten`}
-                columns={["Range", "Entries"]}
+                caption={t("statistics.distributionCaption")}
+                columns={[t("statistics.colRange"), t("statistics.colEntries")]}
               />
             </div>
           </Card>
@@ -221,8 +229,10 @@ export default async function CategoryDetailPage({
         <section aria-labelledby="category-archive">
           <Card>
             <CardHeader
-              title={<span id="category-archive">{category.name} archive</span>}
-              description={`${pluralize(page.total, "entry", "entries")} matching the current filters.`}
+              title={<span id="category-archive">{t("market.archiveTitle", { market: name })}</span>}
+              description={t("market.archiveDescription", {
+                count: t.plural("common.entry", page.total, { count: fmt.number(page.total) }),
+              })}
             />
             <FilterPanel
               basePath={basePath}
@@ -245,10 +255,10 @@ export default async function CategoryDetailPage({
               query={{ ...query, category: undefined }}
               sort={query.sort}
               showCategory={false}
-              caption={`${category.name} historical results`}
+              caption={`${name} — ${t("history.caption")}`}
               emptyAction={
                 <Link href={basePath} className={buttonClass("secondary")}>
-                  Clear filters
+                  {t("common.clearFilters")}
                 </Link>
               }
             />

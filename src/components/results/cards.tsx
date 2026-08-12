@@ -1,7 +1,10 @@
 import Link from "next/link";
 import { ArrowUpRight, CalendarClock } from "lucide-react";
-import { Badge, Card, ResultValue, StatusBadge } from "@/components/ui/primitives";
-import { formatDate, formatRelative, formatSchedule, formatTime, pluralize } from "@/lib/utils/format";
+import { Badge, Card, ResultValue } from "@/components/ui/primitives";
+import { StatusBadge } from "@/components/ui/StatusBadge";
+import { createFormatter } from "@/lib/utils/format";
+import { getLocale, getT } from "@/lib/i18n";
+import { categoryName, localized } from "@/lib/i18n/localize";
 import type { Category, CategorySummary, ResultEntry } from "@/types";
 
 /**
@@ -16,7 +19,7 @@ import type { Category, CategorySummary, ResultEntry } from "@/types";
  * screen-reader users get one clear stop per card.
  */
 
-export function ResultCard({
+export async function ResultCard({
   entry,
   category,
   featured = false,
@@ -25,6 +28,11 @@ export function ResultCard({
   category?: Category;
   featured?: boolean;
 }) {
+  const t = await getT();
+  const locale = await getLocale();
+  const fmt = createFormatter(t);
+  const name = category ? localized(category.name, locale) : entry.categoryName;
+
   return (
     <Card
       as="article"
@@ -35,37 +43,42 @@ export function ResultCard({
           href={`/categories/${entry.categorySlug}`}
           className="after:absolute after:inset-0 after:content-['']"
         >
-          {entry.categoryName}
-          <span className="sr-only"> — open category details</span>
+          {name}
+          <span className="sr-only"> — {t("common.view")}</span>
         </Link>
       </h3>
       {category ? (
         <p className="mt-0.5 flex items-center gap-1 truncate text-xs text-muted">
           <CalendarClock className="size-3 shrink-0" aria-hidden="true" />
-          {formatSchedule(category.scheduleTime)}
+          {fmt.schedule(category.scheduleTime)}
         </p>
       ) : null}
 
       <div className="my-3 flex justify-center sm:my-4">
-        <ResultValue value={entry.value} size={featured ? "lg" : "md"} />
+        <ResultValue value={entry.value} size={featured ? "lg" : "md"} t={t} />
       </div>
 
       <div className="mt-auto flex flex-wrap items-center justify-between gap-x-2 gap-y-1 border-t border-line pt-2.5">
         <StatusBadge status={entry.status} />
-        <p className="text-xs text-muted tabular">{formatDate(entry.date)}</p>
+        <p className="text-xs text-muted tabular">{fmt.date(entry.date)}</p>
       </div>
 
       {/* Just the clock time: at two cards per row there is no space for the
           relative time as well, and truncating it reads as broken. */}
       <p className="mt-1 truncate text-xs text-subtle tabular">
-        {entry.publishedAt ? `Published ${formatTime(entry.publishedAt)}` : "Not published yet"}
+        {entry.publishedAt
+          ? t("common.publishedAt", { time: fmt.time(entry.publishedAt) })
+          : t("common.notPublishedYet")}
       </p>
     </Card>
   );
 }
 
-export function CategoryCard({ summary }: { summary: CategorySummary }) {
+export async function CategoryCard({ summary }: { summary: CategorySummary }) {
   const { category, latest, publishedCount } = summary;
+  const t = await getT();
+  const locale = await getLocale();
+  const fmt = createFormatter(t);
 
   return (
     <Card
@@ -79,26 +92,30 @@ export function CategoryCard({ summary }: { summary: CategorySummary }) {
               href={`/categories/${category.slug}`}
               className="after:absolute after:inset-0 after:content-['']"
             >
-              {category.name}
+              {localized(category.name, locale)}
             </Link>
           </h3>
           <p className="mt-1 flex items-center gap-1 truncate text-xs text-muted">
             <CalendarClock className="size-3 shrink-0" aria-hidden="true" />
-            {formatSchedule(category.scheduleTime)} · {category.updateFrequency}
+            {fmt.schedule(category.scheduleTime)} · {category.updateFrequency}
           </p>
         </div>
-        <ResultValue value={latest?.value ?? null} size="sm" />
+        <ResultValue value={latest?.value ?? null} size="sm" t={t} />
       </div>
 
-      <p className="mt-2.5 line-clamp-2 text-sm text-muted text-pretty">{category.description}</p>
+      <p className="mt-2.5 line-clamp-3 text-sm text-muted text-pretty sm:line-clamp-2">
+        {localized(category.description, locale)}
+      </p>
 
       <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-line pt-2.5">
         <Badge tone={category.status === "active" ? "ok" : "neutral"}>
-          {category.status === "active" ? "Active" : "Paused"}
+          {category.status === "active" ? t("common.active") : t("common.paused")}
         </Badge>
-        <Badge tone="neutral">{pluralize(publishedCount, "entry", "entries")}</Badge>
+        <Badge tone="neutral">
+          {t.plural("common.entry", publishedCount, { count: fmt.number(publishedCount) })}
+        </Badge>
         <span className="ml-auto flex items-center gap-0.5 text-xs font-medium text-accent">
-          View
+          {t("common.view")}
           <ArrowUpRight className="size-3.5" aria-hidden="true" />
         </span>
       </div>
@@ -107,24 +124,28 @@ export function CategoryCard({ summary }: { summary: CategorySummary }) {
 }
 
 /** Compact row used in the "recently published" rail. */
-export function RecentResultRow({ entry }: { entry: ResultEntry }) {
+export async function RecentResultRow({ entry }: { entry: ResultEntry }) {
+  const t = await getT();
+  const locale = await getLocale();
+  const fmt = createFormatter(t);
+
   return (
     <li className="relative flex min-h-14 items-center gap-3 px-3 py-2.5 transition-colors focus-within:bg-surface-2 hover:bg-surface-2 sm:px-4">
-      <ResultValue value={entry.value} size="sm" className="w-9 shrink-0 text-center" />
+      <ResultValue value={entry.value} size="sm" className="w-9 shrink-0 text-center" t={t} />
       <div className="min-w-0 flex-1">
         <p className="truncate text-sm font-medium">
           <Link
             href={`/categories/${entry.categorySlug}`}
             className="after:absolute after:inset-0 after:content-['']"
           >
-            {entry.categoryName}
+            {categoryName(entry.categorySlug, locale)}
           </Link>
         </p>
-        <p className="text-xs text-muted tabular">{formatDate(entry.date)}</p>
+        <p className="text-xs text-muted tabular">{fmt.date(entry.date)}</p>
       </div>
       <p className="shrink-0 text-right text-xs text-muted tabular">
-        {formatTime(entry.publishedAt)}
-        <span className="block text-subtle">{formatRelative(entry.publishedAt)}</span>
+        {fmt.time(entry.publishedAt)}
+        <span className="block text-subtle">{fmt.relative(entry.publishedAt)}</span>
       </p>
     </li>
   );

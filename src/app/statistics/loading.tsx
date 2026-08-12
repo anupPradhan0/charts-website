@@ -10,7 +10,7 @@ import {
 export default function StatisticsLoading() {
   return (
     <>
-      <LoadingAnnouncement label="Loading statistics" />
+      <LoadingAnnouncement labelKey="loading.statistics" />
       <PageHeaderSkeleton />
       <Container className="py-6 sm:py-8">
         <Skeleton className="mb-5 h-40 rounded-card sm:mb-6 sm:h-20" />

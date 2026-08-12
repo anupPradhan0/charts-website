@@ -2,6 +2,7 @@
 
 import dynamic from "next/dynamic";
 import { cn } from "@/lib/utils/format";
+import { useT } from "@/lib/i18n/client";
 
 /**
  * Lazy chart entry point.
@@ -13,6 +14,7 @@ import { cn } from "@/lib/utils/format";
  */
 
 function ChartSkeleton({ vertical = false }: { vertical?: boolean }) {
+  const t = useT();
   return (
     <div
       className={cn(
@@ -20,7 +22,7 @@ function ChartSkeleton({ vertical = false }: { vertical?: boolean }) {
         vertical ? "h-[220px] sm:h-[260px]" : "h-[220px] sm:h-[260px]",
       )}
       role="status"
-      aria-label="Loading chart"
+      aria-label={t("charts.loadingChart")}
     />
   );
 }

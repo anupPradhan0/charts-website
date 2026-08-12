@@ -21,22 +21,29 @@ import { CategoryCard, RecentResultRow, ResultCard } from "@/components/results/
 import { getCategorySummaries } from "@/lib/services/categories";
 import { getLastUpdated, getRecentlyPublished } from "@/lib/services/results";
 import { getStatistics } from "@/lib/services/statistics";
-import { formatDate, formatDateTime, formatRelative, pluralize } from "@/lib/utils/format";
+import { createFormatter } from "@/lib/utils/format";
+import { getLocale, getT } from "@/lib/i18n";
+import { localized } from "@/lib/i18n/localize";
 import { toISODate } from "@/lib/data/results";
-import { SITE } from "@/lib/site";
 
-export const metadata: Metadata = {
-  title: `${SITE.name} — ${SITE.tagline}`,
-  description: SITE.description,
-  alternates: { canonical: "/" },
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getT();
+  return {
+    title: `${t("meta.brand")} — ${t("meta.tagline")}`,
+    description: t("meta.description"),
+    alternates: { canonical: "/" },
+  };
+}
 
 /** The board changes as slots pass, so the homepage is rendered per request. */
 export const dynamic = "force-dynamic";
 
-export default function HomePage() {
+export default async function HomePage() {
+  const t = await getT();
+  const locale = await getLocale();
+  const fmt = createFormatter(t);
   const summaries = getCategorySummaries();
-  const stats = getStatistics({ days: 30 });
+  const stats = getStatistics({ days: 30 }, locale);
   const recent = getRecentlyPublished(8);
   const lastUpdated = getLastUpdated();
   const today = toISODate(new Date());
@@ -53,39 +60,42 @@ export default function HomePage() {
       <section className="border-b border-line bg-surface">
         <Container className="py-6 sm:py-12">
           <p className="text-xs font-medium tracking-wide text-accent uppercase">
-            {SITE.tagline}
+            {t("meta.tagline")}
           </p>
           <h1 className="mt-1.5 max-w-3xl text-2xl font-semibold tracking-tight text-balance sm:mt-2 sm:text-3xl lg:text-4xl">
-            Every published result, and the statistics behind them
+            {t("home.title")}
           </h1>
           <p className="mt-2.5 max-w-2xl text-sm text-muted text-pretty sm:mt-3 sm:text-base">
-            {stats.summary.totalCategories} categories publish on a fixed daily schedule. This
-            board shows what has been published today, what is still to come, and how to reach{" "}
-            {pluralize(stats.summary.publishedResults, "archived entry", "archived entries")}
-            {" "}going back to {formatDate(stats.summary.coverageStart)}.
+            {t("home.intro", {
+              markets: fmt.number(stats.summary.totalCategories),
+              archived: t.plural("common.archivedEntry", stats.summary.publishedResults, {
+                count: fmt.number(stats.summary.publishedResults),
+              }),
+              start: fmt.date(stats.summary.coverageStart),
+            })}
           </p>
 
           <div className="mt-5 flex flex-wrap items-center gap-3">
             {lastUpdated ? (
               <UpdatedStamp
-                timestamp={formatDateTime(lastUpdated)}
-                relative={formatRelative(lastUpdated)}
+                timestamp={fmt.dateTime(lastUpdated)}
+                relative={fmt.relative(lastUpdated)}
               />
             ) : null}
           </div>
 
           <div className="mt-4 grid grid-cols-2 gap-2 sm:mt-5 sm:flex sm:flex-wrap">
             <Link href="/results" className={buttonClass("primary", "col-span-2 sm:col-span-1")}>
-              Current results
+              {t("home.currentResults")}
               <ArrowRight className="size-4" aria-hidden="true" />
             </Link>
             <Link href="/history" className={buttonClass("secondary")}>
               <CalendarRange className="size-4 shrink-0" aria-hidden="true" />
-              <span className="truncate">Archive</span>
+              <span className="truncate">{t("home.archive")}</span>
             </Link>
             <Link href="/statistics" className={buttonClass("secondary")}>
               <LineChart className="size-4 shrink-0" aria-hidden="true" />
-              <span className="truncate">Statistics</span>
+              <span className="truncate">{t("home.statistics")}</span>
             </Link>
           </div>
         </Container>
@@ -96,37 +106,42 @@ export default function HomePage() {
         <section aria-labelledby="overview" className="mb-8 sm:mb-10">
           <SectionHeader
             id="overview"
-            title="At a glance"
-            description={`Coverage from ${formatDate(stats.summary.coverageStart)} to ${formatDate(stats.summary.coverageEnd)}.`}
+            title={t("home.atAGlance")}
+            description={t("home.coverage", {
+              start: fmt.date(stats.summary.coverageStart),
+              end: fmt.date(stats.summary.coverageEnd),
+            })}
             action={
               <Link href="/statistics" className="text-sm font-medium text-accent hover:underline">
-                Full statistics
+                {t("home.fullStatistics")}
               </Link>
             }
           />
           <div className="grid grid-cols-2 gap-2.5 sm:gap-3 lg:grid-cols-4">
             <StatTile
-              label="Published today"
-              value={stats.summary.publishedToday}
-              hint={`of ${stats.summary.activeCategories} active categories`}
+              label={t("home.publishedToday")}
+              value={fmt.number(stats.summary.publishedToday)}
+              hint={t("home.ofActiveMarkets", { count: fmt.number(stats.summary.activeCategories) })}
               icon={<Timer className="size-4" aria-hidden="true" />}
             />
             <StatTile
-              label="Archived entries"
-              value={stats.summary.publishedResults.toLocaleString("en-GB")}
-              hint={`${stats.summary.totalResults.toLocaleString("en-GB")} rows in total`}
+              label={t("home.archivedEntries")}
+              value={fmt.number(stats.summary.publishedResults)}
+              hint={t("home.rowsInTotal", { count: fmt.number(stats.summary.totalResults) })}
               icon={<Database className="size-4" aria-hidden="true" />}
             />
             <StatTile
-              label="Categories"
-              value={stats.summary.totalCategories}
-              hint={`${stats.summary.activeCategories} active`}
+              label={t("home.marketsTile")}
+              value={fmt.number(stats.summary.totalCategories)}
+              hint={t.plural("common.activeCount", stats.summary.activeCategories, {
+                count: fmt.number(stats.summary.activeCategories),
+              })}
               icon={<Layers className="size-4" aria-hidden="true" />}
             />
             <StatTile
-              label="Last update"
-              value={formatRelative(stats.summary.lastUpdated)}
-              hint={formatDateTime(stats.summary.lastUpdated)}
+              label={t("home.lastUpdate")}
+              value={fmt.relative(stats.summary.lastUpdated)}
+              hint={fmt.dateTime(stats.summary.lastUpdated)}
               icon={<LineChart className="size-4" aria-hidden="true" />}
             />
           </div>
@@ -136,19 +151,19 @@ export default function HomePage() {
         <section aria-labelledby="board" className="mb-8 sm:mb-10">
           <SectionHeader
             id="board"
-            title="Current results"
-            description={`Today, ${formatDate(today)}. Where a category has not published yet, its most recent value is shown — check the result date on each card.`}
+            title={t("home.boardTitle")}
+            description={t("home.boardDescription", { date: fmt.date(today) })}
             action={
               <Link href="/results" className="text-sm font-medium text-accent hover:underline">
-                Open the board
+                {t("home.openBoard")}
               </Link>
             }
           />
           {board.length === 0 ? (
             <Card>
               <EmptyState
-                title="Nothing published yet"
-                description="No category has published a value. The board fills in as each scheduled slot passes."
+                title={t("home.nothingPublished")}
+                description={t("home.nothingPublishedHint")}
               />
             </Card>
           ) : (
@@ -167,21 +182,21 @@ export default function HomePage() {
           <div className="lg:col-span-2">
             <Card>
               <CardHeader
-                title={<span id="recent">Recently published</span>}
-                description="The newest entries across every category, most recent first."
+                title={<span id="recent">{t("home.recentlyPublished")}</span>}
+                description={t("home.recentlyPublishedHint")}
                 action={
                   <Link
                     href="/history"
                     className="text-sm font-medium text-accent hover:underline"
                   >
-                    All history
+                    {t("home.allHistory")}
                   </Link>
                 }
               />
               {recent.length === 0 ? (
                 <EmptyState
-                  title="No entries published yet"
-                  description="Published values will appear here as soon as the first slot completes."
+                  title={t("home.noEntriesYet")}
+                  description={t("home.noEntriesYetHint")}
                 />
               ) : (
                 <ul className="divide-y divide-line">
@@ -195,30 +210,28 @@ export default function HomePage() {
 
           <div className="grid gap-3 sm:gap-4">
             <Card className="p-4 sm:p-5">
-              <h3 className="text-sm font-semibold">Historical data</h3>
-              <p className="mt-2 text-sm text-muted">
-                The archive holds every entry back to {formatDate(stats.summary.coverageStart)}.
-                Filter by category, date range and status, then sort and page through the
-                results.
+              <h3 className="text-sm font-semibold">{t("home.historicalData")}</h3>
+              <p className="mt-2 text-sm text-muted text-pretty">
+                {t("home.historicalDataHint", { start: fmt.date(stats.summary.coverageStart) })}
               </p>
               <Link href="/history" className={buttonClass("secondary", "mt-4")}>
                 <CalendarRange className="size-4" aria-hidden="true" />
-                Open the archive
+                {t("home.openArchive")}
               </Link>
             </Card>
 
             <Card className="p-4 sm:p-5">
-              <h3 className="text-sm font-semibold">Publication schedule</h3>
+              <h3 className="text-sm font-semibold">{t("home.publicationSchedule")}</h3>
               <dl className="mt-3 space-y-2 text-sm">
                 {summaries.slice(0, 5).map(({ category }) => (
                   <div key={category.id} className="flex items-baseline justify-between gap-3">
-                    <dt className="truncate text-muted">{category.name}</dt>
+                    <dt className="truncate text-muted">{localized(category.name, locale)}</dt>
                     <dd className="shrink-0 font-medium tabular">{category.scheduleTime}</dd>
                   </div>
                 ))}
               </dl>
               <Link href="/categories" className={buttonClass("ghost", "mt-3 -ml-3")}>
-                All categories
+                {t("home.allMarkets")}
                 <ArrowRight className="size-4" aria-hidden="true" />
               </Link>
             </Card>
@@ -229,11 +242,11 @@ export default function HomePage() {
         <section aria-labelledby="categories">
           <SectionHeader
             id="categories"
-            title="Categories"
-            description="Each category publishes one value per scheduled day. Open a category for its own archive and statistics."
+            title={t("home.marketsTitle")}
+            description={t("home.marketsDescription")}
             action={
               <Link href="/categories" className="text-sm font-medium text-accent hover:underline">
-                View all
+                {t("common.viewAll")}
               </Link>
             }
           />

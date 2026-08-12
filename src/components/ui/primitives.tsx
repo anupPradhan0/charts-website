@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import { cn } from "@/lib/utils/format";
-import type { ResultStatus } from "@/types";
+import type { Translator } from "@/lib/i18n/core";
 
 /* Shared primitives. Server-safe: none of these carry client state. */
 
@@ -75,7 +75,7 @@ export function SectionHeader({
   );
 }
 
-const BADGE_TONES = {
+export const BADGE_TONES = {
   neutral: "bg-surface-2 text-muted border-line",
   accent: "bg-accent-soft text-accent border-transparent",
   ok: "bg-ok-soft text-ok border-transparent",
@@ -106,39 +106,21 @@ export function Badge({
   );
 }
 
-const STATUS_TONE: Record<ResultStatus, keyof typeof BADGE_TONES> = {
-  published: "ok",
-  pending: "warn",
-  scheduled: "info",
-};
-
-const STATUS_LABEL: Record<ResultStatus, string> = {
-  published: "Published",
-  pending: "Pending",
-  scheduled: "Scheduled",
-};
-
-export function StatusBadge({ status }: { status: ResultStatus }) {
-  return (
-    <Badge tone={STATUS_TONE[status]}>
-      <span
-        aria-hidden="true"
-        className="size-1.5 rounded-full bg-current"
-      />
-      {STATUS_LABEL[status]}
-    </Badge>
-  );
-}
-
-/** The headline number. `null` renders a placeholder, never a fake value. */
+/** The headline number. `null` renders a placeholder, never a fake value.
+ *
+ *  Deliberately not async: `ResultValue` is used in tight lists (the archive
+ *  table, the frequency grid) where awaiting a translator per cell would be
+ *  wasteful. Callers that already have a `t` in scope pass it through. */
 export function ResultValue({
   value,
   size = "md",
   className,
+  t,
 }: {
   value: string | null;
   size?: "sm" | "md" | "lg";
   className?: string;
+  t?: Translator;
 }) {
   const sizes = {
     sm: "text-xl",
@@ -149,7 +131,7 @@ export function ResultValue({
     return (
       <span
         className={cn("font-mono font-semibold tabular text-subtle", sizes[size], className)}
-        title="Not published yet"
+        title={t ? t("common.notPublishedYet") : undefined}
       >
         ––
       </span>
@@ -240,12 +222,20 @@ export function EmptyState({
   );
 }
 
+/**
+ * `title` has no built-in fallback: its only caller (`app/error.tsx`, a
+ * mandatory client component) always passes an already-translated string via
+ * `useT()`. Keeping this component free of any `@/lib/i18n` import matters —
+ * `getT()` needs `next/headers`, and importing it here would make this whole
+ * file (which client components also pull `Card`, `buttonClass`, etc. from)
+ * fail to bundle for the client.
+ */
 export function ErrorState({
-  title = "Something went wrong",
+  title,
   description,
   action,
 }: {
-  title?: string;
+  title: string;
   description?: string;
   action?: ReactNode;
 }) {
@@ -256,9 +246,9 @@ export function ErrorState({
     >
       <p className="text-sm font-semibold text-danger break-anywhere">{title}</p>
       {description ? (
-        <p className="mt-1 max-w-sm text-sm text-muted">{description}</p>
+        <p className="mt-1 max-w-sm text-sm text-muted text-pretty">{description}</p>
       ) : null}
-      {action ? <div className="mt-4">{action}</div> : null}
+      {action ? <div className="mt-4 w-full sm:w-auto">{action}</div> : null}
     </div>
   );
 }

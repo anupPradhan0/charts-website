@@ -6,14 +6,20 @@ import { Card, CardHeader, EmptyState, buttonClass } from "@/components/ui/primi
 import { search } from "@/lib/services/results";
 import { listCategories } from "@/lib/services/categories";
 import { canonical } from "@/lib/site";
+import { createFormatter } from "@/lib/utils/format";
+import { getLocale, getT } from "@/lib/i18n";
+import { categoryName, localized } from "@/lib/i18n/localize";
 
-export const metadata: Metadata = {
-  title: "Search",
-  description: "Search categories, dates and published values across the whole archive.",
-  alternates: { canonical: canonical("/search") },
-  // A search results page has no stable content worth indexing.
-  robots: { index: false, follow: true },
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getT();
+  return {
+    title: t("searchPage.title"),
+    description: t("searchPage.metaDescription"),
+    alternates: { canonical: canonical("/search") },
+    // A search results page has no stable content worth indexing.
+    robots: { index: false, follow: true },
+  };
+}
 
 export const dynamic = "force-dynamic";
 
@@ -22,6 +28,9 @@ export default async function SearchPage({
 }: {
   searchParams: Promise<{ q?: string }>;
 }) {
+  const t = await getT();
+  const locale = await getLocale();
+  const fmt = createFormatter(t);
   const { q = "" } = await searchParams;
   const term = q.trim().slice(0, 64);
   const hits = term ? search(term, 12) : [];
@@ -30,16 +39,16 @@ export default async function SearchPage({
   return (
     <>
       <PageHeader
-        title="Search"
-        description="Find a category by name, or a result by date or value. Searching “12” matches both the value 12 and any date containing it."
-        breadcrumbs={[{ href: "/", label: "Home" }, { label: "Search" }]}
+        title={t("searchPage.title")}
+        description={t("searchPage.description")}
+        breadcrumbs={[{ href: "/", label: t("nav.home") }, { label: t("searchPage.title") }]}
       />
 
       <Container className="py-6 sm:py-8">
         <form method="get" role="search" className="mb-5 flex max-w-xl gap-2 sm:mb-6">
           <div className="relative flex-1">
             <label htmlFor="q" className="sr-only">
-              Search categories, dates and values
+              {t("searchPage.inputLabel")}
             </label>
             <SearchIcon
               className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-subtle"
@@ -52,22 +61,24 @@ export default async function SearchPage({
               autoFocus
               defaultValue={term}
               maxLength={64}
-              placeholder="e.g. Alpha, 2026-08-12, or 42"
+              placeholder={t("searchPage.placeholder")}
               className="h-11 w-full rounded-lg border border-line bg-surface pr-3 pl-9 text-base"
             />
           </div>
           <button type="submit" className={buttonClass("primary", "h-11")}>
-            Search
+            {t("searchPage.button")}
           </button>
         </form>
 
         <p className="sr-only" role="status" aria-live="polite">
-          {term ? `${hits.length} results for ${term}` : "Enter a search term"}
+          {term
+            ? t("searchPage.resultsFor", { count: fmt.number(hits.length), term })
+            : t("searchPage.enterTerm")}
         </p>
 
         {!term ? (
           <Card>
-            <CardHeader title="Start typing" description="Or jump straight into a category." />
+            <CardHeader title={t("searchPage.startTyping")} description={t("searchPage.startTypingHint")} />
             <ul className="grid gap-2 p-3 sm:grid-cols-2 sm:p-4 lg:grid-cols-4">
               {categories.map((c) => (
                 <li key={c.slug}>
@@ -75,7 +86,7 @@ export default async function SearchPage({
                     href={`/categories/${c.slug}`}
                     className="flex min-h-11 items-center rounded-lg border border-line px-3 text-sm hover:bg-surface-2"
                   >
-                    {c.name}
+                    {localized(c.name, locale)}
                   </Link>
                 </li>
               ))}
@@ -85,11 +96,11 @@ export default async function SearchPage({
           <Card>
             <EmptyState
               icon={<SearchX className="size-8" aria-hidden="true" />}
-              title={`Nothing matches “${term.slice(0, 40)}”`}
-              description="Try a category name, a full date such as 2026-08-12, or a two-digit value."
+              title={t("searchPage.noMatch", { term: term.slice(0, 40) })}
+              description={t("searchPage.noMatchHint")}
               action={
                 <Link href="/history" className={buttonClass("secondary")}>
-                  Browse the archive instead
+                  {t("searchPage.browseArchive")}
                 </Link>
               }
             />
@@ -97,12 +108,12 @@ export default async function SearchPage({
         ) : (
           <Card>
             <CardHeader
-              title={`${hits.length} ${hits.length === 1 ? "match" : "matches"}`}
-              description={`For “${term.slice(0, 40)}”.`}
+              title={t.plural("searchPage.match", hits.length, { count: fmt.number(hits.length) })}
+              description={t("searchPage.forTerm", { term: term.slice(0, 40) })}
             />
             <ul className="divide-y divide-line">
               {hits.map((hit) => (
-                <li key={`${hit.type}-${hit.href}-${hit.title}`}>
+                <li key={`${hit.type}-${hit.href}`}>
                   <Link
                     href={hit.href}
                     className="flex min-h-14 items-center gap-3 px-3 py-2.5 hover:bg-surface-2 sm:px-4"
@@ -115,8 +126,20 @@ export default async function SearchPage({
                       )}
                     </span>
                     <span className="min-w-0 flex-1">
-                      <span className="block truncate text-sm font-medium">{hit.title}</span>
-                      <span className="block text-xs text-muted">{hit.subtitle}</span>
+                      <span className="block truncate text-sm font-medium">
+                        {hit.type === "category"
+                          ? categoryName(hit.slug, locale)
+                          : `${categoryName(hit.slug, locale)} — ${hit.date ? fmt.date(hit.date) : ""}`}
+                      </span>
+                      <span className="block text-xs text-muted">
+                        {hit.type === "category"
+                          ? t("searchPage.hitCategory", { slot: fmt.schedule(hit.scheduleTime ?? "00:00") })
+                          : hit.status === "published"
+                            ? t("searchPage.hitPublished")
+                            : t("searchPage.hitStatus", {
+                                status: t(`status.${hit.status ?? "pending"}`),
+                              })}
+                      </span>
                     </span>
                     {hit.value ? (
                       <span className="font-mono text-lg font-semibold tabular">{hit.value}</span>

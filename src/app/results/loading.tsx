@@ -10,7 +10,7 @@ import {
 export default function ResultsLoading() {
   return (
     <>
-      <LoadingAnnouncement label="Loading today's board" />
+      <LoadingAnnouncement labelKey="loading.results" />
       <PageHeaderSkeleton />
       <Container className="py-6 sm:py-8">
         <Skeleton className="mb-3 h-5 w-40 sm:mb-4" />

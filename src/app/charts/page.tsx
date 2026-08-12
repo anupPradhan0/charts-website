@@ -12,21 +12,26 @@ import {
   WEEKDAY_HEADS,
 } from "@/lib/services/charts";
 import { getArchiveRange } from "@/lib/data/results";
-import { cn, formatDate, pluralize } from "@/lib/utils/format";
+import { cn, createFormatter } from "@/lib/utils/format";
+import { getLocale, getT } from "@/lib/i18n";
+import { localized } from "@/lib/i18n/localize";
 import { MARKET_GROUPS } from "@/types";
+import { LOCALE_META } from "@/lib/i18n/config";
 import { canonical } from "@/lib/site";
 
-export const metadata: Metadata = {
-  title: "Charts",
-  description:
-    "Two views over the archive: a month calendar of published values for any market, and a frequency grid showing how often each value has appeared.",
-  alternates: { canonical: canonical("/charts") },
-  openGraph: {
-    title: "Charts · Numera",
-    description: "Calendar and frequency views over the published archive.",
-    url: canonical("/charts"),
-  },
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getT();
+  return {
+    title: t("charts.title"),
+    description: t("charts.metaDescription"),
+    alternates: { canonical: canonical("/charts") },
+    openGraph: {
+      title: `${t("charts.title")} · ${t("meta.brand")}`,
+      description: t("charts.metaDescription"),
+      url: canonical("/charts"),
+    },
+  };
+}
 
 export const dynamic = "force-dynamic";
 
@@ -35,6 +40,9 @@ export default async function ChartsPage({
 }: {
   searchParams: Promise<{ market?: string; month?: string }>;
 }) {
+  const t = await getT();
+  const locale = await getLocale();
+  const fmt = createFormatter(t);
   const params = await searchParams;
   const categories = listCategories();
   const months = availableMonths();
@@ -48,15 +56,21 @@ export default async function ChartsPage({
     months[0]?.value ??
     monthOf(range.end);
 
+  const marketName = localized(market.name, locale);
   const grid = getMonthGrid(market.slug, month);
   const matrix = getFrequencyMatrix(market.slug);
+  // Monday-first weekday headers in the active language, straight from Intl.
+  const weekdayLabels = WEEKDAY_HEADS.map((_, i) => {
+    const reference = new Date(2024, 0, 1 + i); // 2024-01-01 was a Monday
+    return new Intl.DateTimeFormat(LOCALE_META[locale].intl, { weekday: "short" }).format(reference);
+  });
 
   return (
     <>
       <PageHeader
-        title="Charts"
-        description="Published values laid out by calendar date, and counted by how often each value has appeared. Both views describe the archive as it stands — neither is a forecast."
-        breadcrumbs={[{ href: "/", label: "Home" }, { label: "Charts" }]}
+        title={t("charts.title")}
+        description={t("charts.description")}
+        breadcrumbs={[{ href: "/", label: t("nav.home") }, { label: t("charts.title") }]}
       />
 
       <Container className="py-6 sm:py-8">
@@ -67,7 +81,7 @@ export default async function ChartsPage({
         >
           <div className="sm:flex-1">
             <label htmlFor="chart-market" className="mb-1 block text-xs font-medium text-muted">
-              Market
+              {t("charts.market")}
             </label>
             <select
               id="chart-market"
@@ -76,12 +90,12 @@ export default async function ChartsPage({
               className="h-11 w-full rounded-lg border border-line bg-surface px-3 text-base sm:h-10 sm:max-w-xs sm:text-sm"
             >
               {MARKET_GROUPS.map((group) => (
-                <optgroup key={group.value} label={group.label}>
+                <optgroup key={group.value} label={t(`groups.${group.value}Label`)}>
                   {categories
                     .filter((c) => c.group === group.value)
                     .map((c) => (
                       <option key={c.slug} value={c.slug}>
-                        {c.name}
+                        {localized(c.name, locale)}
                       </option>
                     ))}
                 </optgroup>
@@ -91,7 +105,7 @@ export default async function ChartsPage({
 
           <div className="sm:flex-1">
             <label htmlFor="chart-month" className="mb-1 block text-xs font-medium text-muted">
-              Month
+              {t("charts.month")}
             </label>
             <select
               id="chart-month"
@@ -101,25 +115,39 @@ export default async function ChartsPage({
             >
               {months.map((m) => (
                 <option key={m.value} value={m.value}>
-                  {m.label}
+                  {fmt.month(m.value)}
                 </option>
               ))}
             </select>
           </div>
 
           <button type="submit" className={buttonClass("primary", "w-full sm:w-auto")}>
-            Show
+            {t("charts.showButton")}
           </button>
         </form>
 
         <div className="mb-5 grid grid-cols-2 gap-2.5 sm:mb-6 sm:gap-3 lg:grid-cols-4">
-          <StatTile label="Market" value={market.name} hint={`Slot ${market.scheduleTime}`} />
-          <StatTile label={grid.label} value={grid.published} hint="days published" />
-          <StatTile label="Gaps this month" value={grid.gaps} hint="days with no entry" />
           <StatTile
-            label="Values seen"
+            label={t("charts.market")}
+            value={marketName}
+            hint={`${t("common.slot")} ${fmt.schedule(market.scheduleTime)}`}
+          />
+          <StatTile
+            label={fmt.month(grid.month)}
+            value={fmt.number(grid.published)}
+            hint={t("charts.daysPublished")}
+          />
+          <StatTile
+            label={t("charts.gapsThisMonth")}
+            value={fmt.number(grid.gaps)}
+            hint={t("charts.daysWithNoEntry")}
+          />
+          <StatTile
+            label={t("charts.valuesSeen")}
             value={`${100 - matrix.unseen}/100`}
-            hint={`from ${pluralize(matrix.total, "entry", "entries")}`}
+            hint={t("charts.fromEntries", {
+              count: t.plural("common.entry", matrix.total, { count: fmt.number(matrix.total) }),
+            })}
           />
         </div>
 
@@ -129,26 +157,26 @@ export default async function ChartsPage({
             title={
               <span className="flex items-center gap-2">
                 <CalendarRange className="size-4 shrink-0" aria-hidden="true" />
-                Calendar — {grid.label}
+                {t("charts.calendarTitle", { month: fmt.month(grid.month) })}
               </span>
             }
-            description={`Every published value for ${market.name}, laid out by date. Empty cells are days with no entry.`}
+            description={t("charts.calendarDescription", { market: marketName })}
           />
           <div className="p-2 sm:p-4">
             <table className="w-full table-fixed border-collapse">
               <caption className="sr-only">
-                {market.name} published values for {grid.label}
+                {t("charts.calendarCaption", { market: marketName, month: fmt.month(grid.month) })}
               </caption>
               <thead>
                 <tr>
-                  {WEEKDAY_HEADS.map((day) => (
+                  {WEEKDAY_HEADS.map((day, index) => (
                     <th
                       key={day}
                       scope="col"
                       className="pb-1.5 text-center text-[0.6875rem] font-medium text-muted sm:text-xs"
                     >
-                      <span className="sm:hidden">{day.slice(0, 1)}</span>
-                      <span className="hidden sm:inline">{day}</span>
+                      <span className="sm:hidden">{weekdayLabels[index].slice(0, 1)}</span>
+                      <span className="hidden sm:inline">{weekdayLabels[index]}</span>
                     </th>
                   ))}
                 </tr>
@@ -175,7 +203,7 @@ export default async function ChartsPage({
                               </span>
                               <span className="font-mono text-sm font-semibold tabular sm:text-lg">
                                 {cell.entry?.value ?? (
-                                  <span className="text-subtle" aria-label="no entry">
+                                  <span className="text-subtle" aria-label={t("charts.noEntry")}>
                                     ·
                                   </span>
                                 )}
@@ -198,20 +226,20 @@ export default async function ChartsPage({
             title={
               <span className="flex items-center gap-2">
                 <Grid3x3 className="size-4 shrink-0" aria-hidden="true" />
-                Value frequency
+                {t("charts.frequencyTitle")}
               </span>
             }
-            description={`How often each value has been published by ${market.name} across the whole archive. Rows are tens, columns are units.`}
+            description={t("charts.frequencyDescription", { market: marketName })}
           />
           <div className="scroll-x p-2 sm:p-4">
             <table className="w-full min-w-[19rem] border-collapse text-center">
               <caption className="sr-only">
-                {market.name}: number of times each value from 00 to 99 has been published
+                {t("charts.frequencyCaption", { market: marketName })}
               </caption>
               <thead>
                 <tr>
                   <th scope="col" className="w-7 text-[0.625rem] text-subtle">
-                    <span className="sr-only">Tens digit</span>
+                    <span className="sr-only">{t("charts.tensDigit")}</span>
                   </th>
                   {Array.from({ length: 10 }, (_, i) => (
                     <th
@@ -236,7 +264,11 @@ export default async function ChartsPage({
                     {row.cells.map((cell) => (
                       <td key={cell.value} className="p-0.5">
                         <div
-                          title={`${cell.value}: published ${cell.count}× (${cell.share}%)`}
+                          title={t("charts.frequencyCell", {
+                            value: cell.value,
+                            count: cell.count,
+                            share: cell.share,
+                          })}
                           style={{
                             // Opacity carries the count; the border keeps empty
                             // cells visible in both themes.
@@ -260,16 +292,20 @@ export default async function ChartsPage({
             </table>
           </div>
           <p className="border-t border-line px-4 py-3 text-xs text-muted text-pretty">
-            Counts describe {pluralize(matrix.total, "published entry", "published entries")} from{" "}
-            {formatDate(range.start)} to {formatDate(range.end)}. Past frequency says nothing about
-            what any market will publish next.
+            {t("charts.frequencyFooter", {
+              entries: t.plural("common.publishedEntry", matrix.total, {
+                count: fmt.number(matrix.total),
+              }),
+              start: fmt.date(range.start),
+              end: fmt.date(range.end),
+            })}
           </p>
         </Card>
 
         <p className="mt-4 text-sm text-muted">
-          Looking for the raw rows instead?{" "}
+          {t("charts.rawRows")}{" "}
           <Link href={`/history?category=${market.slug}`} className="text-accent hover:underline">
-            Open {market.name} in the archive
+            {t("charts.openInArchive", { market: marketName })}
           </Link>
           .
         </p>

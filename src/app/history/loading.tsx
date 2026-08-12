@@ -8,7 +8,7 @@ import {
 export default function HistoryLoading() {
   return (
     <>
-      <LoadingAnnouncement label="Loading historical results" />
+      <LoadingAnnouncement labelKey="loading.history" />
       <PageHeaderSkeleton />
       <Container className="py-6 sm:py-8">
         <TableCardSkeleton />

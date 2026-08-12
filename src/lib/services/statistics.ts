@@ -2,6 +2,8 @@ import { CATEGORIES } from "@/lib/data/categories";
 import { getAllResults, getArchiveRange, getDatasetTimestamp, toISODate } from "@/lib/data/results";
 import type { ResultEntry, Statistics } from "@/types";
 import type { StatisticsQuery } from "./query";
+import { DEFAULT_LOCALE, type Locale } from "@/lib/i18n/config";
+import { localized } from "@/lib/i18n/localize";
 
 /**
  * Descriptive statistics over the demo archive.
@@ -27,7 +29,7 @@ function lastNDates(days: number): string[] {
   return out;
 }
 
-export function getStatistics(q: StatisticsQuery): Statistics {
+export function getStatistics(q: StatisticsQuery, locale: Locale = DEFAULT_LOCALE): Statistics {
   const all = getAllResults();
   const rows = q.category ? all.filter((r) => r.categorySlug === q.category) : all;
   const today = toISODate(new Date());
@@ -54,7 +56,7 @@ export function getStatistics(q: StatisticsQuery): Statistics {
   const categoryActivity = CATEGORIES.filter((c) => !q.category || c.slug === q.category)
     .map((c) => ({
       slug: c.slug,
-      name: c.name,
+      name: localized(c.name, locale),
       published: activityCounts.get(c.slug) ?? 0,
       accent: c.accent,
     }))

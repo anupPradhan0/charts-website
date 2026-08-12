@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { RefreshCw } from "lucide-react";
 import { buttonClass } from "@/components/ui/primitives";
 import { cn } from "@/lib/utils/format";
+import { useT } from "@/lib/i18n/client";
 
 /**
  * Keeps a server-rendered board current.
@@ -15,6 +16,7 @@ import { cn } from "@/lib/utils/format";
  */
 export function AutoRefresh({ intervalMs = 60_000 }: { intervalMs?: number }) {
   const router = useRouter();
+  const t = useT();
   const [pending, startTransition] = useTransition();
   const [status, setStatus] = useState<"idle" | "updated" | "error">("idle");
 
@@ -42,12 +44,12 @@ export function AutoRefresh({ intervalMs = 60_000 }: { intervalMs?: number }) {
   }, [intervalMs, refresh]);
 
   const message = pending
-    ? "Updating…"
+    ? t("results.updating")
     : status === "error"
-      ? "Connection problem — showing the last loaded values"
+      ? t("results.connectionProblem")
       : status === "updated"
-        ? "Updated"
-        : "Auto-updating every minute";
+        ? t("results.updatedNow")
+        : t("results.autoUpdating");
 
   return (
     <div className="flex flex-wrap items-center gap-2">
@@ -71,7 +73,7 @@ export function AutoRefresh({ intervalMs = 60_000 }: { intervalMs?: number }) {
           className={cn("size-3.5", pending && "motion-safe:animate-spin")}
           aria-hidden="true"
         />
-        Refresh now
+        {t("results.refreshNow")}
       </button>
     </div>
   );

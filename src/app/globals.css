@@ -110,7 +110,10 @@
   --color-chart-5: var(--chart-5);
   --color-chart-6: var(--chart-6);
 
-  --font-sans: var(--font-geist-sans);
+  /* Latin first, then the Devanagari and Odia faces. The browser falls
+     through per glyph, so mixed-script text renders in the right face
+     without any per-locale CSS. */
+  --font-sans: var(--font-geist-sans), var(--font-devanagari), var(--font-odia);
   --font-mono: var(--font-geist-mono);
 
   --radius-card: 0.75rem;
@@ -120,6 +123,13 @@
 }
 
 @layer base {
+  /* Devanagari and Odia need a little more line box than Latin at the same
+     size, or diacritics clip against the line above. */
+  :lang(hi),
+  :lang(or) {
+    line-height: 1.6;
+  }
+
   html {
     scroll-behavior: smooth;
     /* Anchor targets clear the sticky header. */
@@ -132,7 +142,9 @@
   body {
     background: var(--bg);
     color: var(--fg);
-    font-family: var(--font-geist-sans), system-ui, sans-serif;
+    font-family:
+      var(--font-geist-sans), var(--font-devanagari), var(--font-odia), system-ui,
+      sans-serif;
     /* Deliberately NOT `overflow-x: hidden` — that hides layout bugs instead
        of fixing them. Overflow is measured at 320-1440px in the audit
        harness and fixed at the component that causes it. */

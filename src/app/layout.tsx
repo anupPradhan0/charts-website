@@ -1,59 +1,91 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Geist, Geist_Mono, Noto_Sans_Devanagari, Noto_Sans_Oriya } from "next/font/google";
 import { Info } from "lucide-react";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
+import { LocaleProvider } from "@/lib/i18n/client";
+import { LOCALE_META } from "@/lib/i18n/config";
+import { getLocale, getT } from "@/lib/i18n";
 import { SITE } from "@/lib/site";
 import "./globals.css";
 
 const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
 const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"] });
 
-export const metadata: Metadata = {
-  metadataBase: new URL(SITE.url),
-  title: {
-    default: `${SITE.name} — ${SITE.tagline}`,
-    template: `%s · ${SITE.name}`,
-  },
-  description: SITE.description,
-  applicationName: SITE.name,
-  alternates: { canonical: "/" },
-  openGraph: {
-    type: "website",
-    siteName: SITE.name,
-    title: `${SITE.name} — ${SITE.tagline}`,
-    description: SITE.description,
-    url: "/",
-  },
-  twitter: {
-    card: "summary",
-    title: `${SITE.name} — ${SITE.tagline}`,
-    description: SITE.description,
-  },
-  robots: { index: true, follow: true },
-};
+/**
+ * Geist covers Latin only. Rather than swapping the whole typeface per
+ * language, the Devanagari and Odia faces are loaded alongside it and listed
+ * as fallbacks — the browser resolves missing glyphs per character, so mixed
+ * text (an Odia label next to a Latin result value) renders correctly without
+ * any locale branching in CSS.
+ */
+const devanagari = Noto_Sans_Devanagari({
+  variable: "--font-devanagari",
+  subsets: ["devanagari"],
+  display: "swap",
+});
 
-export default function RootLayout({ children }: LayoutProps<"/">) {
+const odia = Noto_Sans_Oriya({
+  variable: "--font-odia",
+  subsets: ["oriya"],
+  display: "swap",
+});
+
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getT();
+  return {
+    metadataBase: new URL(SITE.url),
+    title: {
+      default: `${t("meta.brand")} — ${t("meta.tagline")}`,
+      template: `%s · ${t("meta.brand")}`,
+    },
+    description: t("meta.description"),
+    applicationName: t("meta.brand"),
+    alternates: { canonical: "/" },
+    openGraph: {
+      type: "website",
+      siteName: t("meta.brand"),
+      title: `${t("meta.brand")} — ${t("meta.tagline")}`,
+      description: t("meta.description"),
+      url: "/",
+    },
+    twitter: {
+      card: "summary",
+      title: `${t("meta.brand")} — ${t("meta.tagline")}`,
+      description: t("meta.description"),
+    },
+    robots: { index: true, follow: true },
+  };
+}
+
+export default async function RootLayout({ children }: LayoutProps<"/">) {
+  const locale = await getLocale();
+  const t = await getT();
+
   return (
-    <html lang="en" className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}>
+    <html
+      lang={LOCALE_META[locale].htmlLang}
+      className={`${geistSans.variable} ${geistMono.variable} ${devanagari.variable} ${odia.variable} h-full antialiased`}
+    >
       <body className="flex min-h-full flex-col bg-bg text-fg">
-        <a href="#main" className="skip-link rounded-lg bg-accent px-3 py-2 text-sm text-accent-fg">
-          Skip to main content
-        </a>
+        <LocaleProvider locale={locale}>
+          <a href="#main" className="skip-link rounded-lg bg-accent px-3 py-2 text-sm text-accent-fg">
+            {t("nav.skipToContent")}
+          </a>
 
-        <Header />
+          <Header />
 
-        <p className="border-b border-line bg-surface-2 px-3 py-1.5 text-center text-xs text-muted text-pretty">
-          <Info className="mr-1 inline size-3.5 align-[-2px]" aria-hidden="true" />
-          Demonstration site — every category, schedule and value here is fictional generated
-          data.
-        </p>
+          <p className="border-b border-line bg-surface-2 px-3 py-1.5 text-center text-xs text-muted text-pretty">
+            <Info className="mr-1 inline size-3.5 align-[-2px]" aria-hidden="true" />
+            {t("banner.demo")}
+          </p>
 
-        <main id="main" className="flex-1">
-          {children}
-        </main>
+          <main id="main" className="flex-1">
+            {children}
+          </main>
 
-        <Footer />
+          <Footer />
+        </LocaleProvider>
       </body>
     </html>
   );

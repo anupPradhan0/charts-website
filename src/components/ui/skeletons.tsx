@@ -1,5 +1,7 @@
 import { Container } from "@/components/layout/PageShell";
 import { Card, Skeleton } from "@/components/ui/primitives";
+import { getT } from "@/lib/i18n";
+import type { TranslationKey } from "@/lib/i18n/core";
 
 /**
  * Loading skeletons.
@@ -121,10 +123,11 @@ export function TableCardSkeleton({
 }
 
 /** Announced once for the whole page rather than per placeholder. */
-export function LoadingAnnouncement({ label }: { label: string }) {
+export async function LoadingAnnouncement({ labelKey }: { labelKey: TranslationKey }) {
+  const t = await getT();
   return (
     <p className="sr-only" role="status" aria-live="polite">
-      {label}
+      {t(labelKey)}
     </p>
   );
 }

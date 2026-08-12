@@ -5,7 +5,9 @@ import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { RotateCcw, SlidersHorizontal } from "lucide-react";
 import { buttonClass } from "@/components/ui/primitives";
-import { SORT_OPTIONS, STATUS_OPTIONS, buildQuery } from "@/lib/services/query";
+import { buildQuery } from "@/lib/services/query";
+import { useLocale, useT } from "@/lib/i18n/client";
+import { localized } from "@/lib/i18n/localize";
 import { cn } from "@/lib/utils/format";
 import type { Category } from "@/types";
 
@@ -37,7 +39,7 @@ export function FilterPanel({
   min,
   max,
 }: {
-  categories: Pick<Category, "slug" | "name">[];
+  categories: Category[];
   basePath: string;
   defaults: FilterValues;
   /** Category pages filter to one category already — hide the selector. */
@@ -46,8 +48,23 @@ export function FilterPanel({
   max?: string;
 }) {
   const router = useRouter();
+  const t = useT();
+  const locale = useLocale();
   const [open, setOpen] = useState(false);
   const id = useId();
+
+  const sortOptions = [
+    { value: "date_desc", label: t("sort.newest") },
+    { value: "date_asc", label: t("sort.oldest") },
+    { value: "value_desc", label: t("sort.valueHigh") },
+    { value: "value_asc", label: t("sort.valueLow") },
+    { value: "category_asc", label: t("sort.marketAZ") },
+  ];
+  const statusOptions = [
+    { value: "published", label: t("status.published") },
+    { value: "pending", label: t("status.pending") },
+    { value: "scheduled", label: t("status.scheduled") },
+  ];
 
   const {
     register,
@@ -81,10 +98,10 @@ export function FilterPanel({
     <section aria-labelledby={`${id}-heading`} className="border-b border-line">
       <div className="flex items-center justify-between gap-3 px-4 py-3 lg:px-5">
         <h2 id={`${id}-heading`} className="text-sm font-semibold">
-          Filters
+          {t("filters.heading")}
           {activeCount > 0 ? (
             <span className="ml-2 rounded-full bg-accent-soft px-2 py-0.5 text-xs text-accent">
-              {activeCount} active
+              {t("filters.activeCount", { count: activeCount })}
             </span>
           ) : null}
         </h2>
@@ -96,7 +113,7 @@ export function FilterPanel({
           className={cn(buttonClass("secondary"), "lg:hidden")}
         >
           <SlidersHorizontal className="size-4" aria-hidden="true" />
-          {open ? "Hide" : "Show"}
+          {open ? t("common.hide") : t("common.show")}
         </button>
       </div>
 
@@ -111,12 +128,12 @@ export function FilterPanel({
           {/* Order matters on mobile: search first, then scope, then sort. */}
           <div className={lockCategory ? "sm:col-span-2 lg:col-span-2" : ""}>
             <label className={label} htmlFor={`${id}-search`}>
-              Search
+              {t("filters.search")}
             </label>
             <input
               id={`${id}-search`}
               type="search"
-              placeholder="Category, date or value"
+              placeholder={t("filters.searchPlaceholder")}
               className={field}
               {...register("search")}
             />
@@ -125,13 +142,13 @@ export function FilterPanel({
           {!lockCategory ? (
             <div>
               <label className={label} htmlFor={`${id}-category`}>
-                Category
+                {t("filters.market")}
               </label>
               <select id={`${id}-category`} className={field} {...register("category")}>
-                <option value="">All categories</option>
+                <option value="">{t("filters.allMarkets")}</option>
                 {categories.map((c) => (
                   <option key={c.slug} value={c.slug}>
-                    {c.name}
+                    {localized(c.name, locale)}
                   </option>
                 ))}
               </select>
@@ -144,7 +161,7 @@ export function FilterPanel({
           <div className="grid grid-cols-2 gap-3 lg:contents">
             <div>
               <label className={label} htmlFor={`${id}-start`}>
-                From
+                {t("filters.from")}
               </label>
               <input
                 id={`${id}-start`}
@@ -159,7 +176,7 @@ export function FilterPanel({
                     !value ||
                     !values.endDate ||
                     value <= values.endDate ||
-                    "Start date must be on or before the end date",
+                    t("filters.dateOrderError"),
                 })}
               />
               {errors.startDate ? (
@@ -171,7 +188,7 @@ export function FilterPanel({
 
             <div>
               <label className={label} htmlFor={`${id}-end`}>
-                To
+                {t("filters.to")}
               </label>
               <input
                 id={`${id}-end`}
@@ -186,13 +203,13 @@ export function FilterPanel({
 
           <div>
             <label className={label} htmlFor={`${id}-status`}>
-              Status
+              {t("filters.status")}
             </label>
             <select id={`${id}-status`} className={field} {...register("status")}>
-              <option value="">Any status</option>
-              {STATUS_OPTIONS.map((s) => (
-                <option key={s.value} value={s.value}>
-                  {s.label}
+              <option value="">{t("filters.anyStatus")}</option>
+              {statusOptions.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
                 </option>
               ))}
             </select>
@@ -200,12 +217,12 @@ export function FilterPanel({
 
           <div>
             <label className={label} htmlFor={`${id}-sort`}>
-              Sort
+              {t("sort.label")}
             </label>
             <select id={`${id}-sort`} className={field} {...register("sort")}>
-              {SORT_OPTIONS.map((s) => (
-                <option key={s.value} value={s.value}>
-                  {s.label}
+              {sortOptions.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
                 </option>
               ))}
             </select>
@@ -214,7 +231,7 @@ export function FilterPanel({
 
         <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:items-center">
           <button type="submit" className={buttonClass("primary", "w-full sm:w-auto")}>
-            Apply filters
+            {t("common.applyFilters")}
           </button>
           <button
             type="button"
@@ -232,7 +249,7 @@ export function FilterPanel({
             }}
           >
             <RotateCcw className="size-4" aria-hidden="true" />
-            Clear filters
+            {t("common.clearFilters")}
           </button>
         </div>
       </form>

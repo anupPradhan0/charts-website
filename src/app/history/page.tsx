@@ -9,20 +9,23 @@ import { listCategories } from "@/lib/services/categories";
 import { getLastUpdated, listResults } from "@/lib/services/results";
 import { parsePageQuery, resultQuerySchema } from "@/lib/services/query";
 import { getArchiveRange } from "@/lib/data/results";
-import { formatDate, formatDateTime, formatRelative, pluralize } from "@/lib/utils/format";
+import { createFormatter } from "@/lib/utils/format";
+import { getT } from "@/lib/i18n";
 import { canonical } from "@/lib/site";
 
-export const metadata: Metadata = {
-  title: "Historical Results",
-  description:
-    "The full result archive. Filter by category, date range and status, sort by date or value, and page through every published entry.",
-  alternates: { canonical: canonical("/history") },
-  openGraph: {
-    title: "Historical Results · Numera",
-    description: "Search and filter the complete archive of published results.",
-    url: canonical("/history"),
-  },
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getT();
+  return {
+    title: t("history.title"),
+    description: t("history.metaDescription"),
+    alternates: { canonical: canonical("/history") },
+    openGraph: {
+      title: `${t("history.title")} · ${t("meta.brand")}`,
+      description: t("history.metaDescription"),
+      url: canonical("/history"),
+    },
+  };
+}
 
 export const dynamic = "force-dynamic";
 
@@ -31,6 +34,8 @@ export default async function HistoryPage({
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
+  const t = await getT();
+  const fmt = createFormatter(t);
   const raw = await searchParams;
   const query = parsePageQuery(resultQuerySchema, raw);
   const page = listResults(query);
@@ -41,14 +46,17 @@ export default async function HistoryPage({
   return (
     <>
       <PageHeader
-        title="Historical Results"
-        description={`Every entry from ${formatDate(range.start)} to ${formatDate(range.end)}, across all categories.`}
-        breadcrumbs={[{ href: "/", label: "Home" }, { label: "Historical Results" }]}
+        title={t("history.title")}
+        description={t("history.description", {
+          start: fmt.date(range.start),
+          end: fmt.date(range.end),
+        })}
+        breadcrumbs={[{ href: "/", label: t("nav.home") }, { label: t("history.title") }]}
         meta={
           lastUpdated ? (
             <UpdatedStamp
-              timestamp={formatDateTime(lastUpdated)}
-              relative={formatRelative(lastUpdated)}
+              timestamp={fmt.dateTime(lastUpdated)}
+              relative={fmt.relative(lastUpdated)}
             />
           ) : null
         }
@@ -57,11 +65,13 @@ export default async function HistoryPage({
       <Container className="py-6 sm:py-8">
         <Card>
           <CardHeader
-            title="Archive"
-            description={`${pluralize(page.total, "entry", "entries")} match the current filters.`}
+            title={t("history.archive")}
+            description={t("history.matching", {
+              count: t.plural("common.entry", page.total, { count: fmt.number(page.total) }),
+            })}
             action={
               <Link href="/statistics" className="text-sm font-medium text-accent hover:underline">
-                Statistics
+                {t("nav.statistics")}
               </Link>
             }
           />
@@ -82,7 +92,11 @@ export default async function HistoryPage({
           />
 
           <p className="sr-only" role="status" aria-live="polite">
-            {page.total} results found, showing page {page.page} of {page.totalPages}
+            {t("history.statusMessage", {
+              count: fmt.number(page.total),
+              page: fmt.number(page.page),
+              pages: fmt.number(page.totalPages),
+            })}
           </p>
 
           <ResultsTable
@@ -92,7 +106,7 @@ export default async function HistoryPage({
             sort={query.sort}
             emptyAction={
               <Link href="/history" className={buttonClass("secondary")}>
-                Clear filters
+                {t("common.clearFilters")}
               </Link>
             }
           />

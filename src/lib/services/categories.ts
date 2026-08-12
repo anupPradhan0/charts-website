@@ -11,7 +11,13 @@ export function listCategories(
   return CATEGORIES.filter((c) => {
     if (opts.status && c.status !== opts.status) return false;
     if (opts.group && c.group !== opts.group) return false;
-    if (needle && !c.name.toLowerCase().includes(needle) && !c.slug.includes(needle))
+    // Match on the name in any language, so a Hindi or Odia search term finds
+    // the market a Hindi or Odia reader is looking at.
+    if (
+      needle &&
+      !Object.values(c.name).some((n) => n.toLowerCase().includes(needle)) &&
+      !c.slug.includes(needle)
+    )
       return false;
     return true;
   });

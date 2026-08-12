@@ -5,7 +5,7 @@ import { LoadingAnnouncement, PageHeaderSkeleton } from "@/components/ui/skeleto
 export default function SearchLoading() {
   return (
     <>
-      <LoadingAnnouncement label="Searching" />
+      <LoadingAnnouncement labelKey="loading.searching" />
       <PageHeaderSkeleton withMeta={false} />
       <Container className="py-6 sm:py-8">
         <Skeleton className="mb-5 h-11 w-full max-w-xl sm:mb-6" />

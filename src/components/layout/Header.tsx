@@ -7,6 +7,8 @@ import { BarChart3, Menu, Search, X } from "lucide-react";
 import { cn } from "@/lib/utils/format";
 import { LiveClock } from "./LiveClock";
 import { NAV_ITEMS, isActivePath as isActive } from "./nav";
+import { useT } from "@/lib/i18n/client";
+import { LanguageOptions, LanguageSelector } from "./LanguageSelector";
 
 /**
  * Mobile-first header.
@@ -19,6 +21,7 @@ import { NAV_ITEMS, isActivePath as isActive } from "./nav";
  */
 export function Header() {
   const pathname = usePathname();
+  const t = useT();
   const [open, setOpen] = useState(false);
   const close = () => setOpen(false);
 
@@ -54,24 +57,24 @@ export function Header() {
           href="/"
           onClick={close}
           className="-mx-1 flex min-h-11 shrink-0 items-center gap-2 rounded-lg px-1 font-semibold tracking-tight"
-          aria-label="Numera — home"
+          aria-label={t("nav.brandHome")}
         >
           <span className="grid size-8 shrink-0 place-items-center rounded-lg bg-accent text-accent-fg">
             <BarChart3 className="size-4.5" aria-hidden="true" />
           </span>
-          <span className="text-base">Numera</span>
+          <span className="text-base">{t("meta.brand")}</span>
         </Link>
 
-        <nav aria-label="Primary" className="ml-2 hidden lg:block">
+        <nav aria-label={t("nav.label")} className="ml-2 hidden lg:block">
           <ul className="flex items-center gap-0.5">
             {NAV_ITEMS.map((item) => (
-              <li key={item.label}>
+              <li key={item.href}>
                 <Link
                   href={item.href}
                   className={linkClass(item.href)}
                   aria-current={isActive(pathname, item.href) ? "page" : undefined}
                 >
-                  {item.label}
+                  {t(item.labelKey)}
                 </Link>
               </li>
             ))}
@@ -87,7 +90,7 @@ export function Header() {
               without squeezing the brand. */}
           <form action="/search" role="search" className="hidden lg:block">
             <label htmlFor="header-search" className="sr-only">
-              Search results and categories
+              {t("searchPage.inputLabel")}
             </label>
             <div className="relative">
               <Search
@@ -98,16 +101,18 @@ export function Header() {
                 id="header-search"
                 type="search"
                 name="q"
-                placeholder="Search…"
+                placeholder={`${t("common.search")}…`}
                 className="h-9 w-40 rounded-lg border border-line bg-surface-2 pr-3 pl-8 text-sm placeholder:text-subtle xl:w-56"
               />
             </div>
           </form>
 
+          <LanguageSelector className="hidden lg:block" />
+
           <Link
             href="/search"
             onClick={close}
-            aria-label="Search"
+            aria-label={t("common.search")}
             className={cn(iconButton, "lg:hidden")}
           >
             <Search className="size-5" aria-hidden="true" />
@@ -125,7 +130,7 @@ export function Header() {
             ) : (
               <Menu className="size-5" aria-hidden="true" />
             )}
-            <span className="sr-only">{open ? "Close menu" : "Open menu"}</span>
+            <span className="sr-only">{open ? t("nav.closeMenu") : t("nav.openMenu")}</span>
           </button>
         </div>
       </div>
@@ -133,12 +138,12 @@ export function Header() {
       {open ? (
         <nav
           id="mobile-nav"
-          aria-label="Primary"
+          aria-label={t("nav.label")}
           className="max-h-[calc(100dvh-3.5rem)] overflow-y-auto overscroll-contain border-t border-line bg-surface lg:hidden"
         >
           <ul className="mx-auto max-w-7xl px-3 py-2 sm:px-6">
             {NAV_ITEMS.map((item) => (
-              <li key={item.label}>
+              <li key={item.href}>
                 <Link
                   href={item.href}
                   onClick={close}
@@ -150,7 +155,7 @@ export function Header() {
                   )}
                   aria-current={isActive(pathname, item.href) ? "page" : undefined}
                 >
-                  {item.label}
+                  {t(item.labelKey)}
                 </Link>
                 {item.children ? (
                   <ul className="mb-1 ml-3 border-l border-line pl-3">
@@ -161,7 +166,7 @@ export function Header() {
                           onClick={close}
                           className="flex min-h-11 items-center rounded-lg px-3 text-sm text-muted hover:bg-surface-2 hover:text-fg"
                         >
-                          {child.label}
+                          {t(child.labelKey)}
                         </Link>
                       </li>
                     ))}
@@ -169,6 +174,9 @@ export function Header() {
                 ) : null}
               </li>
             ))}
+            <li className="mt-1 border-t border-line pt-2">
+              <LanguageOptions onSelected={close} />
+            </li>
             <li className="border-t border-line px-3 py-3 xl:hidden">
               <LiveClock />
             </li>

@@ -2,6 +2,8 @@
 
 import { useSyncExternalStore } from "react";
 import { Clock } from "lucide-react";
+import { LOCALE_META } from "@/lib/i18n/config";
+import { useLocale, useT } from "@/lib/i18n/client";
 
 /** Local date and time, ticking every 30 seconds.
  *
@@ -23,6 +25,9 @@ const getSnapshot = () => Math.floor(Date.now() / TICK_MS);
 const getServerSnapshot = () => null;
 
 export function LiveClock() {
+  const locale = useLocale();
+  const t = useT();
+  const tag = LOCALE_META[locale].intl;
   const tick = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
   const now = tick === null ? null : new Date(tick * TICK_MS);
 
@@ -32,11 +37,11 @@ export function LiveClock() {
       <span className="min-w-32">
         {now ? (
           <>
-            <span className="sr-only">Current local time: </span>
-            {now.toLocaleDateString("en-GB", { day: "2-digit", month: "short" })}
+            <span className="sr-only">{t("nav.currentTime")} </span>
+            {now.toLocaleDateString(tag, { day: "2-digit", month: "short" })}
             {" · "}
             {now
-              .toLocaleTimeString("en-GB", {
+              .toLocaleTimeString(tag, {
                 hour: "2-digit",
                 minute: "2-digit",
                 hour12: true,

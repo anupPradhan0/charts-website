@@ -13,7 +13,8 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import { formatDateShort } from "@/lib/utils/format";
+import { createFormatter } from "@/lib/utils/format";
+import { useT } from "@/lib/i18n/client";
 
 /**
  * Chart implementations. Loaded lazily by `./Charts` — Recharts is the single
@@ -130,13 +131,15 @@ export function TrendChart({
   height?: number;
 }) {
   const narrow = useNarrow();
+  const t = useT();
+  const fmt = createFormatter(t);
   const axis = axisProps(narrow);
   const chartHeight = height ?? (narrow ? 220 : 260);
 
   return (
     <ChartFigure
       caption={caption}
-      columns={["Date", "Published", "Not published"]}
+      columns={[t("statistics.colDate"), t("statistics.colPublished"), t("statistics.colNotPublished")]}
       rows={data.map((d) => [d.date, d.published, d.pending])}
     >
       <ResponsiveContainer width="100%" height={narrow ? 220 : chartHeight}>
@@ -155,19 +158,19 @@ export function TrendChart({
             dataKey="date"
             {...axis}
             minTickGap={narrow ? 40 : 24}
-            tickFormatter={(value: string) => formatDateShort(value)}
+            tickFormatter={(value: string) => fmt.dateShort(value)}
           />
           <YAxis {...axis} allowDecimals={false} width={narrow ? 30 : 40} />
           <Tooltip
             {...tooltipStyle}
             labelFormatter={(label) =>
-              typeof label === "string" ? formatDateShort(label) : label
+              typeof label === "string" ? fmt.dateShort(label) : label
             }
           />
           <Area
             type="monotone"
             dataKey="published"
-            name="Published"
+            name={t("statistics.colPublished")}
             stroke="var(--chart-1)"
             strokeWidth={2}
             fill="url(#trendFill)"
@@ -176,7 +179,7 @@ export function TrendChart({
           <Area
             type="monotone"
             dataKey="pending"
-            name="Not published"
+            name={t("statistics.colNotPublished")}
             stroke="var(--chart-3)"
             strokeWidth={1.5}
             strokeDasharray="4 3"

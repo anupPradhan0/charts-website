@@ -1,25 +1,19 @@
 import type { ReactNode } from "react";
 import Link from "next/link";
 import { ChevronRight } from "lucide-react";
-import { cn } from "@/lib/utils/format";
+import { getT } from "@/lib/i18n";
+import { Container } from "./Container";
 
-export function Container({
-  children,
-  className,
-}: {
-  children: ReactNode;
-  className?: string;
-}) {
-  return (
-    <div className={cn("mx-auto w-full max-w-7xl px-3 sm:px-6 lg:px-8", className)}>
-      {children}
-    </div>
-  );
-}
+/** Re-exported so the many server pages that already `import { Container }
+ *  from "./PageShell"` keep working. `error.tsx` (a client component) must
+ *  import `Container` from `./Container` directly instead — see that file
+ *  for why. */
+export { Container };
 
-function Breadcrumbs({ trail }: { trail: { href?: string; label: string }[] }) {
+async function Breadcrumbs({ trail }: { trail: { href?: string; label: string }[] }) {
+  const t = await getT();
   return (
-    <nav aria-label="Breadcrumb" className="mb-3">
+    <nav aria-label={t("nav.breadcrumb")} className="mb-3">
       <ol className="flex flex-wrap items-center gap-x-1 text-xs text-muted">
         {trail.map((crumb, i) => (
           <li key={crumb.label} className="flex items-center gap-1">
@@ -44,7 +38,7 @@ function Breadcrumbs({ trail }: { trail: { href?: string; label: string }[] }) {
 }
 
 /** Standard page heading block: one <h1> per page, optional meta strip. */
-export function PageHeader({
+export async function PageHeader({
   title,
   description,
   meta,
@@ -85,15 +79,16 @@ export function PageHeader({
 }
 
 /** "Last updated ..." strip shown under page headings. */
-export function UpdatedStamp({
+export async function UpdatedStamp({
   timestamp,
   relative,
-  label = "Last updated",
+  label,
 }: {
   timestamp: string;
   relative: string;
   label?: string;
 }) {
+  const t = await getT();
   return (
     <p
       className="flex items-center gap-1.5 text-xs text-muted"
@@ -104,7 +99,7 @@ export function UpdatedStamp({
         <span className="absolute inline-flex size-2 rounded-full bg-ok opacity-60" />
         <span className="relative inline-flex size-2 rounded-full bg-ok" />
       </span>
-      {label}: <span className="font-medium text-fg tabular">{timestamp}</span>
+      {label ?? t("common.lastUpdated")}: <span className="font-medium text-fg tabular">{timestamp}</span>
       <span className="text-subtle">({relative})</span>
     </p>
   );

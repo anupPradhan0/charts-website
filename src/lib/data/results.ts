@@ -115,7 +115,9 @@ function buildResults(now: Date): ResultEntry[] {
         id: `${category.slug}_${dayISO}`,
         categoryId: category.id,
         categorySlug: category.slug,
-        categoryName: category.name,
+        // Canonical English name: the API contract and search index use it.
+        // The UI resolves the display name from the slug per locale.
+        categoryName: category.name.en,
         date: dayISO,
         value: entryValue,
         status,
