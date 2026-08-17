@@ -13,14 +13,14 @@ export async function GET(
 ) {
   const { slug } = await params;
   const locale = normalizeLocale(new URL(request.url).searchParams.get("locale"));
-  const summary = getCategorySummary(slug);
+  const summary = await getCategorySummary(slug);
   if (!summary) return notFound(`No category with slug "${slug}"`);
 
   return ok({
     data: {
       ...summary,
       category: localizeCategory(summary.category, locale),
-      recentResults: getResultsForCategory(slug, 30),
+      recentResults: await getResultsForCategory(slug, 30),
     },
     meta: { locale },
   });

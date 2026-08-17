@@ -1,4 +1,3 @@
-import { CATEGORY_BY_SLUG } from "@/lib/data/categories";
 import { DEFAULT_LOCALE, type Locale } from "./config";
 import type { Category, LocalizedText } from "@/types";
 
@@ -27,9 +26,6 @@ export function localizeCategory(category: Category, locale: Locale): LocalizedC
   };
 }
 
-/** Result rows carry the canonical English name for search and the API; the UI
- *  looks the display name up by slug instead. */
-export function categoryName(slug: string, locale: Locale): string {
-  const category = CATEGORY_BY_SLUG.get(slug);
-  return category ? localized(category.name, locale) : slug;
-}
+/** Client components import this module for `localized()`, so nothing here may
+ *  reach the database. Resolving a display name from a slug needs the category
+ *  set and therefore lives in `@/lib/services/categories` instead. */

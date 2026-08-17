@@ -28,6 +28,14 @@ export function ok<T>(data: T, init?: ResponseInit): NextResponse {
   });
 }
 
+/** Admin responses are per-administrator and must never be cached anywhere. */
+export function okPrivate<T>(data: T, init?: ResponseInit): NextResponse {
+  return NextResponse.json(data, {
+    ...init,
+    headers: { "Cache-Control": "no-store", ...init?.headers },
+  });
+}
+
 export function fail(
   status: number,
   code: string,

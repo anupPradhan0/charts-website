@@ -1,49 +1,50 @@
-import { getAllResults, getDatasetTimestamp } from "@/lib/data/results";
-import { CATEGORIES, CATEGORY_BY_SLUG } from "@/lib/data/categories";
+import { getSnapshot, type Snapshot } from "@/lib/data/snapshot";
 import type { Paginated, ResultEntry } from "@/types";
 import type { ResultQuery } from "./query";
 
 /**
- * Result queries. Everything the UI and the API can ask about results goes
- * through here — no component or route reads the dataset directly.
+ * Result queries. Everything the UI and the public API can ask about results
+ * goes through here — no component or route reads the database directly.
  */
 
-const NAMES_BY_SLUG = new Map(
-  CATEGORIES.map((c) => [c.slug, Object.values(c.name).map((n) => n.toLowerCase())]),
-);
-
-function matchesSearch(row: ResultEntry, term: string): boolean {
+function matchesSearch(row: ResultEntry, term: string, lookups: Snapshot["lookups"]): boolean {
   const needle = term.toLowerCase();
   return (
     row.categoryName.toLowerCase().includes(needle) ||
-    (NAMES_BY_SLUG.get(row.categorySlug) ?? []).some((n) => n.includes(needle)) ||
+    (lookups.namesBySlug.get(row.categorySlug) ?? []).some((n) => n.includes(needle)) ||
     row.categorySlug.includes(needle) ||
     row.date.includes(needle) ||
     (row.value ?? "").includes(needle)
   );
 }
 
-const GROUP_BY_SLUG = new Map(CATEGORIES.map((c) => [c.slug, c.group]));
-
-function applyFilters(rows: ResultEntry[], q: Partial<ResultQuery>): ResultEntry[] {
+function applyFilters(
+  rows: ResultEntry[],
+  q: Partial<ResultQuery>,
+  lookups: Snapshot["lookups"],
+): ResultEntry[] {
   return rows.filter((row) => {
     if (q.category && row.categorySlug !== q.category) return false;
-    if (q.group && GROUP_BY_SLUG.get(row.categorySlug) !== q.group) return false;
+    if (q.group && lookups.groupBySlug.get(row.categorySlug) !== q.group) return false;
     if (q.status && row.status !== q.status) return false;
     if (q.date && row.date !== q.date) return false;
     if (q.startDate && row.date < q.startDate) return false;
     if (q.endDate && row.date > q.endDate) return false;
-    if (q.search && !matchesSearch(row, q.search)) return false;
+    if (q.search && !matchesSearch(row, q.search, lookups)) return false;
     return true;
   });
 }
 
-const SLOT_BY_ID = new Map(CATEGORIES.map((c) => [c.id, c.scheduleTime]));
-
-function applySort(rows: ResultEntry[], sort: ResultQuery["sort"]): ResultEntry[] {
+function applySort(
+  rows: ResultEntry[],
+  sort: ResultQuery["sort"],
+  lookups: Snapshot["lookups"],
+): ResultEntry[] {
   const sorted = [...rows];
   const bySlot = (a: ResultEntry, b: ResultEntry) =>
-    (SLOT_BY_ID.get(a.categoryId) ?? "").localeCompare(SLOT_BY_ID.get(b.categoryId) ?? "");
+    (lookups.slotById.get(a.categoryId) ?? "").localeCompare(
+      lookups.slotById.get(b.categoryId) ?? "",
+    );
   // Unpublished entries have no value; they always sort last on value sorts.
   const numeric = (r: ResultEntry) => (r.value === null ? null : Number(r.value));
 
@@ -72,8 +73,13 @@ function applySort(rows: ResultEntry[], sort: ResultQuery["sort"]): ResultEntry[
   }
 }
 
-export function listResults(q: ResultQuery): Paginated<ResultEntry> {
-  const filtered = applySort(applyFilters(getAllResults(), q), q.sort);
+export async function listResults(q: ResultQuery): Promise<Paginated<ResultEntry>> {
+  const snapshot = await getSnapshot();
+  const filtered = applySort(
+    applyFilters(snapshot.results, q, snapshot.lookups),
+    q.sort,
+    snapshot.lookups,
+  );
   const total = filtered.length;
   const totalPages = Math.max(1, Math.ceil(total / q.limit));
   // A page number beyond the end returns the last page rather than nothing.
@@ -88,20 +94,23 @@ export function listResults(q: ResultQuery): Paginated<ResultEntry> {
   };
 }
 
-export function getResultById(id: string): ResultEntry | null {
-  return getAllResults().find((r) => r.id === id) ?? null;
+export async function getResultById(id: string): Promise<ResultEntry | null> {
+  const { results } = await getSnapshot();
+  return results.find((r) => r.id === id) ?? null;
 }
 
 /** Most recently published entries across all categories. */
-export function getRecentlyPublished(limit = 8): ResultEntry[] {
-  return getAllResults()
+export async function getRecentlyPublished(limit = 8): Promise<ResultEntry[]> {
+  const { results } = await getSnapshot();
+  return results
     .filter((r) => r.publishedAt)
     .sort((a, b) => b.publishedAt!.localeCompare(a.publishedAt!))
     .slice(0, limit);
 }
 
-export function getResultsForCategory(slug: string, limit: number): ResultEntry[] {
-  return getAllResults()
+export async function getResultsForCategory(slug: string, limit: number): Promise<ResultEntry[]> {
+  const { results } = await getSnapshot();
+  return results
     .filter((r) => r.categorySlug === slug)
     .sort((a, b) => b.date.localeCompare(a.date))
     .slice(0, limit);
@@ -124,23 +133,26 @@ export interface SearchHit {
 /** Global search across category names and result rows. Titles and subtitles
  *  are resolved by the UI from these structured fields, never shipped as
  *  pre-formatted English prose — that would defeat localisation. */
-export function search(term: string, limit = 8): SearchHit[] {
+export async function search(term: string, limit = 8): Promise<SearchHit[]> {
   const needle = term.trim().toLowerCase();
   if (!needle) return [];
+  const snapshot = await getSnapshot();
 
-  const categories = CATEGORIES.filter(
-    (c) =>
-      Object.values(c.name).some((n) => n.toLowerCase().includes(needle)) ||
-      c.slug.includes(needle),
-  ).map<SearchHit>((c) => ({
-    type: "category",
-    slug: c.slug,
-    href: `/categories/${c.slug}`,
-    scheduleTime: c.scheduleTime,
-  }));
+  const categories = snapshot.categories
+    .filter(
+      (c) =>
+        Object.values(c.name).some((n) => n.toLowerCase().includes(needle)) ||
+        c.slug.includes(needle),
+    )
+    .map<SearchHit>((c) => ({
+      type: "category",
+      slug: c.slug,
+      href: `/categories/${c.slug}`,
+      scheduleTime: c.scheduleTime,
+    }));
 
-  const results = getAllResults()
-    .filter((r) => matchesSearch(r, needle))
+  const results = snapshot.results
+    .filter((r) => matchesSearch(r, needle, snapshot.lookups))
     .slice(0, limit)
     .map<SearchHit>((r) => ({
       type: "result",
@@ -154,10 +166,10 @@ export function search(term: string, limit = 8): SearchHit[] {
   return [...categories, ...results].slice(0, limit + categories.length);
 }
 
-export function getLastUpdated(): string | null {
-  return getDatasetTimestamp();
+export async function getLastUpdated(): Promise<string | null> {
+  return (await getSnapshot()).lastUpdated;
 }
 
-export function categoryExists(slug: string): boolean {
-  return CATEGORY_BY_SLUG.has(slug);
+export async function categoryExists(slug: string): Promise<boolean> {
+  return (await getSnapshot()).bySlug.has(slug);
 }

@@ -1,4 +1,5 @@
-import { getAllResults, parseISODate, toISODate } from "@/lib/data/results";
+import { getAllResults } from "@/lib/data/snapshot";
+import { parseISODate, toISODate } from "@/lib/utils/date";
 import type { ResultEntry } from "@/types";
 
 /**
@@ -35,8 +36,8 @@ export function monthOf(date: string): string {
 }
 
 /** Months covered by the archive, newest first. */
-export function availableMonths(): { value: string; label: string }[] {
-  const months = new Set(getAllResults().map((r) => monthOf(r.date)));
+export async function availableMonths(): Promise<{ value: string; label: string }[]> {
+  const months = new Set((await getAllResults()).map((r) => monthOf(r.date)));
   return [...months]
     .sort((a, b) => b.localeCompare(a))
     .map((value) => ({
@@ -49,13 +50,13 @@ export function availableMonths(): { value: string; label: string }[] {
  * A month of one market's entries laid out as calendar weeks.
  * Cells outside the month are padding, so every week has seven columns.
  */
-export function getMonthGrid(slug: string, month: string): MonthGrid {
+export async function getMonthGrid(slug: string, month: string): Promise<MonthGrid> {
   const [year, monthIndex] = month.split("-").map(Number);
   const first = new Date(year, monthIndex - 1, 1);
   const daysInMonth = new Date(year, monthIndex, 0).getDate();
 
   const entries = new Map(
-    getAllResults()
+    (await getAllResults())
       .filter((r) => r.categorySlug === slug && monthOf(r.date) === month)
       .map((r) => [r.date, r]),
   );
@@ -110,11 +111,11 @@ export interface FrequencyMatrix {
  * — a finer-grained view of the same distribution shown on the statistics
  * page, and a description of past frequency only.
  */
-export function getFrequencyMatrix(slug?: string): FrequencyMatrix {
+export async function getFrequencyMatrix(slug?: string): Promise<FrequencyMatrix> {
   const counts = new Array(100).fill(0);
   let total = 0;
 
-  for (const row of getAllResults()) {
+  for (const row of await getAllResults()) {
     if (row.value === null) continue;
     if (slug && row.categorySlug !== slug) continue;
     counts[Number(row.value)] += 1;

@@ -12,11 +12,11 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> },
 ) {
   const { id } = await params;
-  const result = getResultById(id);
+  const result = await getResultById(id);
   if (!result) return notFound(`No result with id "${id}"`);
 
   const locale = normalizeLocale(new URL(request.url).searchParams.get("locale"));
-  const category = getCategory(result.categorySlug);
+  const category = await getCategory(result.categorySlug);
 
   return ok({
     data: { ...result, category: category ? localizeCategory(category, locale) : null },

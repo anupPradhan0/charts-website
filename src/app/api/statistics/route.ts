@@ -13,10 +13,13 @@ export async function GET(request: NextRequest) {
   if ("response" in parsed) return parsed.response;
 
   const { category } = parsed.data;
-  if (category && !categoryExists(category)) {
+  if (category && !(await categoryExists(category))) {
     return fail(404, "not_found", `No category with slug "${category}"`);
   }
 
   const locale = normalizeLocale(new URL(request.url).searchParams.get("locale"));
-  return ok({ data: getStatistics(parsed.data, locale), meta: { query: parsed.data, locale } });
+  return ok({
+    data: await getStatistics(parsed.data, locale),
+    meta: { query: parsed.data, locale },
+  });
 }

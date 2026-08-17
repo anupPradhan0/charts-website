@@ -4,7 +4,7 @@ import { useSyncExternalStore } from "react";
 import { Clock } from "lucide-react";
 import { createFormatter } from "@/lib/utils/format";
 import { useT } from "@/lib/i18n/client";
-import { toISODate } from "@/lib/data/results";
+import { toISODate } from "@/lib/utils/date";
 
 /** Local date and time, ticking every 30 seconds.
  *

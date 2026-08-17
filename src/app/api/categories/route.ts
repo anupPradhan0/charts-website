@@ -25,7 +25,7 @@ export async function GET(request: NextRequest) {
   const locale = normalizeLocale(parsed.data.locale);
 
   if (summary === "true") {
-    const rows = getCategorySummaries()
+    const rows = (await getCategorySummaries())
       .filter(
         (s) =>
           (!status || s.category.status === status) &&
@@ -38,6 +38,6 @@ export async function GET(request: NextRequest) {
     return ok({ data: rows, meta: { total: rows.length, locale } });
   }
 
-  const rows = listCategories({ search, status }).map((c) => localizeCategory(c, locale));
+  const rows = (await listCategories({ search, status })).map((c) => localizeCategory(c, locale));
   return ok({ data: rows, meta: { total: rows.length, locale } });
 }

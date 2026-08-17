@@ -5,7 +5,7 @@ import { StatusBadge } from "@/components/ui/StatusBadge";
 import { buildQuery } from "@/lib/services/query";
 import { cn, createFormatter, type Formatter } from "@/lib/utils/format";
 import { getLocale, getT } from "@/lib/i18n";
-import { categoryName } from "@/lib/i18n/localize";
+import { categoryNamer } from "@/lib/services/categories";
 import type { Translator } from "@/lib/i18n/core";
 import type { ResultEntry } from "@/types";
 import type { ResultQuery } from "@/lib/services/query";
@@ -142,6 +142,7 @@ export async function ResultsTable({
   const t = await getT();
   const locale = await getLocale();
   const fmt: Formatter = createFormatter(t);
+  const nameOf = await categoryNamer(locale);
 
   if (rows.length === 0) {
     return (
@@ -217,7 +218,7 @@ export async function ResultsTable({
                       href={`/categories/${row.categorySlug}`}
                       className="font-medium text-accent hover:underline"
                     >
-                      {categoryName(row.categorySlug, locale)}
+                      {nameOf(row.categorySlug)}
                     </Link>
                   </td>
                 ) : null}
@@ -253,7 +254,7 @@ export async function ResultsTable({
                     href={`/categories/${row.categorySlug}`}
                     className="-mx-1 inline-flex min-h-8 items-center px-1 text-accent"
                   >
-                    {categoryName(row.categorySlug, locale)}
+                    {nameOf(row.categorySlug)}
                   </Link>
                 </p>
               ) : null}

@@ -1,0 +1,100 @@
+// PostgreSQL is the source of truth for every category and result the site
+// publishes. The public pages read through a service layer; the admin panel
+// writes through one. Nothing reads the database from a client component.
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+/// Someone who can sign in to /admin. Passwords are stored as a scrypt hash —
+/// see src/lib/admin/auth.ts.
+model Admin {
+  id           String    @id @default(cuid())
+  email        String    @unique
+  name         String
+  passwordHash String
+  lastLoginAt  DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  sessions Session[]
+}
+
+/// A signed-in browser. `token` holds a hash of the cookie value, so a database
+/// leak does not hand over live sessions.
+model Session {
+  id        String   @id @default(cuid())
+  token     String   @unique
+  adminId   String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  admin Admin @relation(fields: [adminId], references: [id], onDelete: Cascade)
+
+  @@index([adminId])
+  @@index([expiresAt])
+}
+
+enum MarketGroup {
+  day
+  night
+  special
+}
+
+enum ResultStatus {
+  published
+  pending
+  scheduled
+}
+
+/// A market. Names and descriptions are stored once as {"en","hi","or"} and
+/// resolved per request — the row is never duplicated per language.
+model Category {
+  id              String      @id @default(cuid())
+  slug            String      @unique
+  name            Json
+  description     Json
+  /// 24h "HH:MM" — the daily slot at which this category publishes.
+  scheduleTime    String      @db.VarChar(5)
+  group           MarketGroup @default(day)
+  isActive        Boolean     @default(true)
+  displayOrder    Int         @default(0)
+  updateFrequency String      @default("Daily") @db.VarChar(32)
+  /// 1-6, maps onto the --color-chart-N design tokens.
+  accent          Int         @default(1)
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  results Result[]
+
+  @@index([isActive])
+  @@index([group, displayOrder])
+}
+
+/// One published value for one category on one calendar day.
+model Result {
+  id            String       @id @default(cuid())
+  categoryId    String
+  /// Two-character demo value "00".."99". Null until published.
+  value         String?      @db.VarChar(2)
+  publishedDate DateTime     @db.Date
+  /// 24h "HH:MM" — when the value was (or is due to be) published.
+  publishedTime String       @db.VarChar(5)
+  status        ResultStatus @default(pending)
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+
+  // Restrict, not Cascade: deleting a category that still holds results would
+  // silently destroy archive rows. The admin deactivates instead.
+  category Category @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+
+  @@unique([categoryId, publishedDate])
+  @@index([publishedDate])
+  @@index([status])
+  @@index([categoryId, publishedDate])
+}

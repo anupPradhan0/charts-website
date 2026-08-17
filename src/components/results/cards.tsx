@@ -4,7 +4,8 @@ import { Badge, Card, ResultValue } from "@/components/ui/primitives";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { createFormatter } from "@/lib/utils/format";
 import { getLocale, getT } from "@/lib/i18n";
-import { categoryName, localized } from "@/lib/i18n/localize";
+import { localized } from "@/lib/i18n/localize";
+import { categoryNamer } from "@/lib/services/categories";
 import type { Category, CategorySummary, ResultEntry } from "@/types";
 
 /**
@@ -138,7 +139,7 @@ export async function RecentResultRow({ entry }: { entry: ResultEntry }) {
             href={`/categories/${entry.categorySlug}`}
             className="after:absolute after:inset-0 after:content-['']"
           >
-            {categoryName(entry.categorySlug, locale)}
+            {(await categoryNamer(locale))(entry.categorySlug)}
           </Link>
         </p>
         <p className="text-xs text-muted tabular">{fmt.date(entry.date)}</p>

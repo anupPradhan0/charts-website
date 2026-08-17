@@ -1,36 +1,18 @@
-import Link from "next/link";
-import { Container } from "@/components/layout/PageShell";
-import { Card, EmptyState, buttonClass } from "@/components/ui/primitives";
-import { getT } from "@/lib/i18n";
+import SiteLayout from "./(site)/layout";
+import SiteNotFound, { generateMetadata } from "./(site)/not-found";
 
-export async function generateMetadata() {
-  const t = await getT();
-  return { title: t("errors.notFoundMeta") };
-}
+/**
+ * A URL that matches no route at all renders here, outside the `(site)` group
+ * and therefore outside its header and footer. Composing the two components
+ * directly gives an unmatched URL the same page a `notFound()` inside the site
+ * produces, without a second copy of either.
+ */
+export { generateMetadata };
 
 export default async function NotFound() {
-  const t = await getT();
   return (
-    <Container className="py-16">
-      <Card className="mx-auto max-w-lg">
-        <EmptyState
-          title={t("errors.notFoundTitle")}
-          description={t("errors.notFoundHint")}
-          action={
-            <div className="flex flex-wrap justify-center gap-2">
-              <Link href="/" className={buttonClass("primary")}>
-                {t("errors.homepage")}
-              </Link>
-              <Link href="/categories" className={buttonClass("secondary")}>
-                {t("errors.allMarkets")}
-              </Link>
-              <Link href="/history" className={buttonClass("secondary")}>
-                {t("errors.archive")}
-              </Link>
-            </div>
-          }
-        />
-      </Card>
-    </Container>
+    <SiteLayout params={Promise.resolve({})}>
+      <SiteNotFound />
+    </SiteLayout>
   );
 }

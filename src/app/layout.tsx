@@ -1,8 +1,5 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono, Noto_Sans_Devanagari, Noto_Sans_Oriya } from "next/font/google";
-import { Info } from "lucide-react";
-import { Header } from "@/components/layout/Header";
-import { Footer } from "@/components/layout/Footer";
 import { LocaleProvider } from "@/lib/i18n/client";
 import { LOCALE_META } from "@/lib/i18n/config";
 import { getLocale, getT } from "@/lib/i18n";
@@ -13,12 +10,13 @@ const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
 const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"] });
 
 /**
- * Geist covers Latin only. Rather than swapping the whole typeface per
- * language, the Devanagari and Odia faces are loaded alongside it and listed
- * as fallbacks — the browser resolves missing glyphs per character, so mixed
- * text (an Odia label next to a Latin result value) renders correctly without
- * any locale branching in CSS.
+ * The document shell: fonts, language and the locale provider, and nothing
+ * else. The public site's header, demo banner and footer live in
+ * `(site)/layout.tsx`; the admin panel has its own chrome in
+ * `admin/(dashboard)/layout.tsx`. Both are children of this one, so the two
+ * areas share a document and a language without sharing a navigation.
  */
+
 const devanagari = Noto_Sans_Devanagari({
   variable: "--font-devanagari",
   subsets: ["devanagari"],
@@ -60,7 +58,6 @@ export async function generateMetadata(): Promise<Metadata> {
 
 export default async function RootLayout({ children }: LayoutProps<"/">) {
   const locale = await getLocale();
-  const t = await getT();
 
   return (
     <html
@@ -68,24 +65,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
       className={`${geistSans.variable} ${geistMono.variable} ${devanagari.variable} ${odia.variable} h-full antialiased`}
     >
       <body className="flex min-h-full flex-col bg-bg text-fg">
-        <LocaleProvider locale={locale}>
-          <a href="#main" className="skip-link rounded-lg bg-accent px-3 py-2 text-sm text-accent-fg">
-            {t("nav.skipToContent")}
-          </a>
-
-          <Header />
-
-          <p className="border-b border-line bg-surface-2 px-3 py-1.5 text-center text-xs text-muted text-pretty">
-            <Info className="mr-1 inline size-3.5 align-[-2px]" aria-hidden="true" />
-            {t("banner.demo")}
-          </p>
-
-          <main id="main" className="flex-1">
-            {children}
-          </main>
-
-          <Footer />
-        </LocaleProvider>
+        <LocaleProvider locale={locale}>{children}</LocaleProvider>
       </body>
     </html>
   );

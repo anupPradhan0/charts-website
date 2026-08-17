@@ -2,7 +2,7 @@ import type { NextRequest } from "next/server";
 import { ok, parseQuery } from "@/lib/api/http";
 import { listResults } from "@/lib/services/results";
 import { resultQuerySchema } from "@/lib/services/query";
-import { getArchiveRange } from "@/lib/data/results";
+import { getArchiveRange } from "@/lib/data/snapshot";
 
 export const dynamic = "force-dynamic";
 
@@ -15,8 +15,8 @@ export async function GET(request: NextRequest) {
   const parsed = parseQuery(resultQuerySchema, new URL(request.url));
   if ("response" in parsed) return parsed.response;
 
-  const page = listResults(parsed.data);
-  const range = getArchiveRange();
+  const page = await listResults(parsed.data);
+  const range = await getArchiveRange();
 
   return ok({
     data: page.items,

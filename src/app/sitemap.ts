@@ -1,11 +1,15 @@
 import type { MetadataRoute } from "next";
-import { CATEGORIES } from "@/lib/data/categories";
-import { getDatasetTimestamp } from "@/lib/data/results";
+import { getSnapshot } from "@/lib/data/snapshot";
 import { SITE } from "@/lib/site";
 import { NAV_PAGES } from "@/components/layout/nav";
 
-export default function sitemap(): MetadataRoute.Sitemap {
-  const lastModified = getDatasetTimestamp() ?? new Date().toISOString();
+/** Categories are database rows now, so the sitemap is generated per request
+ *  rather than frozen at build time. */
+export const dynamic = "force-dynamic";
+
+export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
+  const { categories, lastUpdated } = await getSnapshot();
+  const lastModified = lastUpdated ?? new Date().toISOString();
   const url = (path: string) => new URL(path, SITE.url).toString();
 
   const priorities: Record<string, number> = {
@@ -24,7 +28,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
       changeFrequency: (priorities[path] ? "daily" : "monthly") as "daily" | "monthly",
       priority: priorities[path] ?? 0.3,
     })),
-    ...CATEGORIES.map((category) => ({
+    ...categories.map((category) => ({
       url: url(`/categories/${category.slug}`),
       lastModified,
       changeFrequency: "daily" as const,

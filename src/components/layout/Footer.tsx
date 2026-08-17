@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { BarChart3 } from "lucide-react";
-import { CATEGORIES } from "@/lib/data/categories";
+import { listCategories } from "@/lib/services/categories";
 import { MARKET_GROUPS } from "@/types";
 import { getLocale, getT } from "@/lib/i18n";
 import { localized } from "@/lib/i18n/localize";
@@ -10,6 +10,7 @@ export async function Footer() {
   const t = await getT();
   const locale = await getLocale();
   const year = new Date().getFullYear();
+  const categories = await listCategories();
 
   return (
     <footer className="mt-12 border-t border-line bg-surface">
@@ -48,7 +49,7 @@ export async function Footer() {
               {t(`groups.${group.value}Label`)}
             </h2>
             <ul className="mt-1">
-              {CATEGORIES.filter((c) => c.group === group.value).map((category) => (
+              {categories.filter((c) => c.group === group.value).map((category) => (
                 <li key={category.slug}>
                   <Link
                     href={`/categories/${category.slug}`}

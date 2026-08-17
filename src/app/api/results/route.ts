@@ -13,7 +13,7 @@ export async function GET(request: NextRequest) {
   const parsed = parseQuery(resultQuerySchema, new URL(request.url));
   if ("response" in parsed) return parsed.response;
 
-  const page = listResults(parsed.data);
+  const page = await listResults(parsed.data);
   return ok({
     data: page.items,
     meta: {

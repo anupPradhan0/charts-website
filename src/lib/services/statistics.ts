@@ -1,5 +1,5 @@
-import { CATEGORIES } from "@/lib/data/categories";
-import { getAllResults, getArchiveRange, getDatasetTimestamp, toISODate } from "@/lib/data/results";
+import { getSnapshot } from "@/lib/data/snapshot";
+import { toISODate } from "@/lib/utils/date";
 import type { ResultEntry, Statistics } from "@/types";
 import type { StatisticsQuery } from "./query";
 import { DEFAULT_LOCALE, type Locale } from "@/lib/i18n/config";
@@ -29,8 +29,13 @@ function lastNDates(days: number): string[] {
   return out;
 }
 
-export function getStatistics(q: StatisticsQuery, locale: Locale = DEFAULT_LOCALE): Statistics {
-  const all = getAllResults();
+export async function getStatistics(
+  q: StatisticsQuery,
+  locale: Locale = DEFAULT_LOCALE,
+): Promise<Statistics> {
+  const snapshot = await getSnapshot();
+  const all = snapshot.results;
+  const categories = snapshot.categories;
   const rows = q.category ? all.filter((r) => r.categorySlug === q.category) : all;
   const today = toISODate(new Date());
   const window = new Set(lastNDates(q.days));
@@ -53,7 +58,7 @@ export function getStatistics(q: StatisticsQuery, locale: Locale = DEFAULT_LOCAL
     if (row.status !== "published") continue;
     activityCounts.set(row.categorySlug, (activityCounts.get(row.categorySlug) ?? 0) + 1);
   }
-  const categoryActivity = CATEGORIES.filter((c) => !q.category || c.slug === q.category)
+  const categoryActivity = categories.filter((c) => !q.category || c.slug === q.category)
     .map((c) => ({
       slug: c.slug,
       name: localized(c.name, locale),
@@ -107,16 +112,16 @@ export function getStatistics(q: StatisticsQuery, locale: Locale = DEFAULT_LOCAL
     count: weekdayCounts[i],
   }));
 
-  const range = getArchiveRange();
+  const range = snapshot.range;
 
   return {
     summary: {
       totalResults: rows.length,
       publishedResults: published.length,
       publishedToday: rows.filter((r) => r.date === today && r.status === "published").length,
-      activeCategories: CATEGORIES.filter((c) => c.status === "active").length,
-      totalCategories: CATEGORIES.length,
-      lastUpdated: getDatasetTimestamp(),
+      activeCategories: categories.filter((c) => c.status === "active").length,
+      totalCategories: categories.length,
+      lastUpdated: snapshot.lastUpdated,
       coverageStart: range.start,
       coverageEnd: range.end,
     },
