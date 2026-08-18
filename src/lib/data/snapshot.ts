@@ -12,17 +12,25 @@ import type { Category, LocalizedText, MarketGroup, ResultEntry } from "@/types"
  * set back. Filtering, sorting, statistics and search then run over that array
  * exactly as they did before the database existed.
  *
- * ponytail: the archive is a few thousand rows, so one full-table read per
- * request is cheaper and far smaller than pushing every filter, the
- * localized-name search and the distribution maths into SQL. `cache()` dedupes
- * it within a request — a page that asks four services for data still issues
- * one pair of queries. Push filters down into Prisma (as `src/lib/admin/*`
- * already does) once the archive stops fitting comfortably in memory.
+ * ponytail: the archive is a few thousand rows, so one full-table read is
+ * cheaper and far smaller than pushing every filter, the localized-name search
+ * and the distribution maths into SQL. Push filters down into Prisma (as
+ * `src/lib/admin/*` already does) once the archive stops fitting comfortably in
+ * memory.
  *
- * Deliberately not cached *between* requests: a module-level cache is per
- * bundle graph, so a write through a route handler would not invalidate the
- * copy a page render holds, and the admin panel and the public site would
- * disagree about what exists.
+ * `cache()` dedupes the read within one request, so a page asking four services
+ * for data still issues one pair of queries.
+ *
+ * Deliberately nothing between requests. Two attempts were made and both lied:
+ * a module-level cache is per bundle graph, so a write through a route handler
+ * left the copy a page render held untouched; Next's own data cache is shared,
+ * but its on-disk entries outlive the process that invalidated the tag, so a
+ * restarted server served rows that had already been deleted. Correctness here
+ * is worth more than the round trip — an administrator publishing a result has
+ * to see it, and a deleted market has to be gone. Against a distant database
+ * that costs a few hundred milliseconds a page; the fix for that is to fetch
+ * less (push the filters into SQL, as `src/lib/admin/*` does) or to host the
+ * app beside the database, not to serve data that is not there any more.
  */
 
 export interface Snapshot {
@@ -49,7 +57,12 @@ function localizedText(value: unknown): LocalizedText {
   return { en, hi: text.hi ?? en, or: text.or ?? en };
 }
 
-async function build(): Promise<Snapshot> {
+interface SnapshotRows {
+  categories: Category[];
+  results: ResultEntry[];
+}
+
+async function readRows(): Promise<SnapshotRows> {
   const [categoryRows, resultRows] = await Promise.all([
     prisma.category.findMany({ orderBy: [{ displayOrder: "asc" }, { scheduleTime: "asc" }] }),
     prisma.result.findMany({
@@ -88,6 +101,12 @@ async function build(): Promise<Snapshot> {
     };
   });
 
+  return { categories, results };
+}
+
+async function build(): Promise<Snapshot> {
+  const { categories, results } = await readRows();
+
   const lastUpdated = results.reduce<string | null>(
     (latest, r) => (r.publishedAt && (!latest || r.publishedAt > latest) ? r.publishedAt : latest),
     null,
@@ -114,7 +133,8 @@ async function build(): Promise<Snapshot> {
   };
 }
 
-/** Memoized for the lifetime of one request, never beyond it. */
+/** Deduped for the lifetime of one request; the rows underneath it come from
+ *  the shared cache above. */
 export const getSnapshot = cache(build);
 
 export async function getAllResults(): Promise<ResultEntry[]> {

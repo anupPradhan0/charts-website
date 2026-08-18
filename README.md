@@ -29,6 +29,12 @@ npm run dev                    # http://localhost:3000 — /admin to sign in
 administrator is created from `ADMIN_EMAIL` / `ADMIN_PASSWORD` at seed time, and
 `DATABASE_URL` is read on the server only — never exposed to the browser.
 
+To use managed Postgres (Neon, Supabase, …) instead of Docker, point
+`DATABASE_URL` at the **pooled** endpoint and set `DIRECT_URL` to the unpooled
+one — `prisma migrate` runs DDL, which a connection pooler will not do. Then
+`npm run db:deploy && npm run db:seed`. With `DIRECT_URL` unset everything goes
+through `DATABASE_URL`, which is what the local Docker database wants.
+
 | Command             | What it does                                                  |
 | ------------------- | ------------------------------------------------------------- |
 | `npm run dev`       | Development server                                             |
@@ -198,6 +204,16 @@ maths then run over that array. Admin result lists do the opposite: they filter,
 sort and paginate in SQL, because that table grows by one row per market per
 day. Nothing is cached between requests, so an admin write is visible to the
 public site immediately.
+
+That last sentence is a deliberate trade, and it costs latency when the database
+is far away. Against local Docker a page renders in 25–55 ms; against a database
+in another region, ~300 ms, because every request pulls the whole archive across
+the wire. Two cross-request caches were tried and both served data that no
+longer existed — a module-level cache is per bundle graph, and Next's data cache
+keeps on-disk entries that outlive the process which invalidated their tag. If
+this becomes a problem, fetch less rather than cache more: push the filters into
+SQL the way `src/lib/admin/*` already does, or host the app in the database's
+region.
 
 ## API
 
